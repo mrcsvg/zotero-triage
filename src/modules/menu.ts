@@ -53,36 +53,94 @@ async function promptCustom() {
   await applyToSelection(n);
 }
 
-export function registerContextMenu() {
-  const quickLevel = (
-    which: "High" | "Medium" | "Low",
-    msgId: "menu-high" | "menu-medium" | "menu-low",
-  ) => ({
-    tag: "menuitem" as const,
-    label: getString(msgId, { args: { value: getLevel(which) } }),
-    commandListener: () => void applyToSelection(getLevel(which)),
-  });
+const MENU_ID = `${config.addonRef}-itemmenu-priority`;
 
-  ztoolkit.Menu.register("item", {
-    tag: "menu",
-    id: `${config.addonRef}-itemmenu-priority`,
-    label: getString("menu-priority"),
-    icon: `chrome://${config.addonRef}/content/icons/favicon@0.5x.png`,
-    children: [
-      quickLevel("High", "menu-high"),
-      quickLevel("Medium", "menu-medium"),
-      quickLevel("Low", "menu-low"),
-      { tag: "menuseparator" as const },
+export function registerContextMenu(win: Window = Zotero.getMainWindow()) {
+  // toolkit 5.1.4 removed `ztoolkit.Menu` (the MenuManager). Build the XUL
+  // submenu with the UI tool instead and append it to the native item-menu
+  // popup. Elements created via `ztoolkit.UI` are tracked and removed by
+  // `ztoolkit.unregisterAll()` on shutdown/unload — see hooks.ts.
+  const doc = win?.document;
+  const itemmenu = doc?.getElementById("zotero-itemmenu");
+  if (!itemmenu) return;
+
+  const QUICK_LEVELS = [
+    { which: "High", msgId: "menu-high", id: `${MENU_ID}-high` },
+    { which: "Medium", msgId: "menu-medium", id: `${MENU_ID}-medium` },
+    { which: "Low", msgId: "menu-low", id: `${MENU_ID}-low` },
+  ] as const;
+
+  const quickLabel = (q: (typeof QUICK_LEVELS)[number]) =>
+    getString(q.msgId, { args: { value: getLevel(q.which) } });
+
+  const quickLevel = (q: (typeof QUICK_LEVELS)[number]) => ({
+    tag: "menuitem",
+    id: q.id,
+    attributes: { label: quickLabel(q) },
+    listeners: [
       {
-        tag: "menuitem" as const,
-        label: getString("menu-custom"),
-        commandListener: () => void promptCustom(),
-      },
-      {
-        tag: "menuitem" as const,
-        label: getString("menu-clear"),
-        commandListener: () => void applyToSelection(null),
+        type: "command",
+        listener: () => void applyToSelection(getLevel(q.which)),
       },
     ],
   });
+
+  ztoolkit.UI.appendElement(
+    {
+      tag: "menu",
+      id: MENU_ID,
+      namespace: "xul",
+      classList: ["menu-iconic"],
+      // `removeIfExists` guards against duplicate submenus on hot-reload.
+      removeIfExists: true,
+      attributes: {
+        label: getString("menu-priority"),
+        image: `chrome://${config.addonRef}/content/icons/favicon@0.5x.png`,
+      },
+      children: [
+        {
+          tag: "menupopup",
+          // Quick-level labels embed the pref value; refresh them each time the
+          // submenu opens so edits in the pref pane show without a restart. The
+          // command listeners already read the value live at click time.
+          listeners: [
+            {
+              type: "popupshowing",
+              listener: () => {
+                for (const q of QUICK_LEVELS) {
+                  doc
+                    ?.getElementById(q.id)
+                    ?.setAttribute("label", quickLabel(q));
+                }
+              },
+            },
+          ],
+          children: [
+            quickLevel(QUICK_LEVELS[0]),
+            quickLevel(QUICK_LEVELS[1]),
+            quickLevel(QUICK_LEVELS[2]),
+            { tag: "menuseparator" },
+            {
+              tag: "menuitem",
+              attributes: { label: getString("menu-custom") },
+              listeners: [
+                { type: "command", listener: () => void promptCustom() },
+              ],
+            },
+            {
+              tag: "menuitem",
+              attributes: { label: getString("menu-clear") },
+              listeners: [
+                {
+                  type: "command",
+                  listener: () => void applyToSelection(null),
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    },
+    itemmenu,
+  );
 }
