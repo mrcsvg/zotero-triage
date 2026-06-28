@@ -5,12 +5,12 @@
   "description": "Zotero Triage — a sortable reading-priority column for Zotero, with optional local auto-ranking.",
   "config": {
     "addonName": "Zotero Triage",
-    "addonID": "zotero-triage@local.dev",
+    "addonID": "zotero-triage@mrcsvg.github.io",
     "addonRef": "zoterotriage",
     "addonInstance": "ZoteroTriage",
     "prefsPrefix": "extensions.zotero.zoterotriage"
   },
-  "author": "dev",
+  "author": "Marcus Garcia",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/mrcsvg/zotero-triage.git"
