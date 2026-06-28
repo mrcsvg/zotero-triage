@@ -1,0 +1,51 @@
+name: Feature request
+description: Suggest an idea or improvement for Zotero Triage.
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the suggestion. Note the project's scope: a sortable
+        reading-priority column, plus an optional **local** auto-ranking layer.
+        It deliberately does **not** aim to replace systematic-review tools
+        (ASReview, Rayyan) — see the README and `doc/zotero-triage-spec.md`.
+  - type: checkboxes
+    id: preflight
+    attributes:
+      label: Before requesting
+      options:
+        - label: I searched existing issues and this isn't a duplicate.
+          required: true
+        - label: This fits the project's scope (a priority column / local ranking), not systematic review.
+          required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem does this solve?
+      description: Describe the use case, not just the solution.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+    validations:
+      required: true
+  - type: dropdown
+    id: phase
+    attributes:
+      label: Which area does this touch?
+      description: See the roadmap in the README.
+      options:
+        - "Phase 1 — manual priority column / menu / shortcuts"
+        - "Phase 2 — local auto-ranking (TF-IDF + classifier)"
+        - "Phase 3 — pluggable providers / extensions"
+        - "Not sure"
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+    validations:
+      required: false

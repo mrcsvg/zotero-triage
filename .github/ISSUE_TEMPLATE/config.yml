@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Zotero forums (general usage questions)
+    url: https://forums.zotero.org/categories/plugins
+    about: For general Zotero help or usage questions that aren't a Zotero Triage bug.
