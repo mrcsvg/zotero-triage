@@ -1,0 +1,87 @@
+<linkset>
+  <html:link rel="localization" href="__addonRef__-preferences.ftl" />
+</linkset>
+<groupbox>
+  <label><html:h2 data-l10n-id="pref-title"></html:h2></label>
+
+  <hbox align="center">
+    <html:label
+      for="zotero-prefpane-__addonRef__-format"
+      data-l10n-id="pref-format"
+    ></html:label>
+    <menulist
+      id="zotero-prefpane-__addonRef__-format"
+      preference="format"
+      native="true"
+    >
+      <menupopup>
+        <menuitem value="number" data-l10n-id="pref-format-number" />
+        <menuitem value="stars" data-l10n-id="pref-format-stars" />
+        <menuitem value="bar" data-l10n-id="pref-format-bar" />
+      </menupopup>
+    </menulist>
+  </hbox>
+
+  <hbox align="center">
+    <html:label
+      for="zotero-prefpane-__addonRef__-step"
+      data-l10n-id="pref-step"
+    ></html:label>
+    <html:input
+      type="number"
+      min="1"
+      max="100"
+      id="zotero-prefpane-__addonRef__-step"
+      preference="step"
+    ></html:input>
+  </hbox>
+
+  <separator />
+  <label><html:h3 data-l10n-id="pref-levels"></html:h3></label>
+
+  <hbox align="center">
+    <html:label
+      for="zotero-prefpane-__addonRef__-levelHigh"
+      data-l10n-id="pref-level-high"
+    ></html:label>
+    <html:input
+      type="number"
+      min="0"
+      max="100"
+      id="zotero-prefpane-__addonRef__-levelHigh"
+      preference="levelHigh"
+    ></html:input>
+  </hbox>
+  <hbox align="center">
+    <html:label
+      for="zotero-prefpane-__addonRef__-levelMedium"
+      data-l10n-id="pref-level-medium"
+    ></html:label>
+    <html:input
+      type="number"
+      min="0"
+      max="100"
+      id="zotero-prefpane-__addonRef__-levelMedium"
+      preference="levelMedium"
+    ></html:input>
+  </hbox>
+  <hbox align="center">
+    <html:label
+      for="zotero-prefpane-__addonRef__-levelLow"
+      data-l10n-id="pref-level-low"
+    ></html:label>
+    <html:input
+      type="number"
+      min="0"
+      max="100"
+      id="zotero-prefpane-__addonRef__-levelLow"
+      preference="levelLow"
+    ></html:input>
+  </hbox>
+</groupbox>
+<vbox>
+  <html:label
+    data-l10n-id="pref-help"
+    data-l10n-args='{"name": "__addonName__","version":"__buildVersion__"}'
+  ></html:label>
+</vbox>

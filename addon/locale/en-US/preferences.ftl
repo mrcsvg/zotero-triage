@@ -1,0 +1,14 @@
+pref-title = Zotero Triage
+pref-format = Column display
+pref-format-number =
+    .label = Number (0–100)
+pref-format-stars =
+    .label = Stars (0–5)
+pref-format-bar =
+    .label = Mini-bar
+pref-step = Shortcut step (Alt+↑/↓)
+pref-levels = Quick levels
+pref-level-high = High
+pref-level-medium = Medium
+pref-level-low = Low
+pref-help = { $name } v{ $version } · no telemetry, no network
