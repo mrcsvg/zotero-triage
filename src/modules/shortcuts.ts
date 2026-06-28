@@ -1,4 +1,7 @@
-import { bumpReadingPriorityForItems, setReadingPriorityForItems } from "./extra";
+import {
+  bumpReadingPriorityForItems,
+  setReadingPriorityForItems,
+} from "./extra";
 import { getSelectedItems } from "./menu";
 import { getStep } from "./prefs";
 

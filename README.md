@@ -20,7 +20,7 @@ order it by priority. The usual workarounds all fall short:
 
 - **Tags** (`*`, `**`, `to-read`) clutter the tag pane and don't sort cleanly.
 - **A "TO READ" collection** separates but doesn't order.
-- **Reading-status plugins** (zotero-reading-list, Reading Flow) track *status*
+- **Reading-status plugins** (zotero-reading-list, Reading Flow) track _status_
   (read / unread / reading) but give no **sortable numeric priority** and no
   automatic ranking.
 
@@ -33,7 +33,7 @@ later, a local classifier that learns what you find relevant and ranks the rest.
   `Zotero.ItemTreeManager`. Numeric sort is correct (100 sorts above 20, not
   lexically) — see [`src/modules/column.ts`](src/modules/column.ts).
 - **Display formats:** number, stars (0–5), or mini-bar — switchable in preferences.
-- **Context menu** → *Zotero Triage*: quick levels (High / Medium / Low),
+- **Context menu** → _Zotero Triage_: quick levels (High / Medium / Low),
   Custom… (type a 0–100 value), and Clear.
 - **Keyboard shortcuts** (chosen to avoid the `Alt+NUM` collision with Zotero's
   native column-sort):
@@ -100,11 +100,11 @@ The full design spec lives in [`doc/zotero-triage-spec.md`](doc/zotero-triage-sp
 
 ## Roadmap
 
-| Phase | Deliverable | Status |
-|-------|-------------|--------|
-| **1 — MVP** | Manual priority column + menu + shortcuts + Extra persistence | ✅ Implemented |
-| **2 — Local auto-ranking** | TF-IDF + lightweight classifier (logistic / naive Bayes) that learns from relevant/irrelevant labels and scores the rest, fully on-device | 📋 Specified |
-| **3 — Providers** | Pluggable relevance provider (optional, opt-in embeddings) | 🅿️ Backlog |
+| Phase                      | Deliverable                                                                                                                               | Status         |
+| -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- | -------------- |
+| **1 — MVP**                | Manual priority column + menu + shortcuts + Extra persistence                                                                             | ✅ Implemented |
+| **2 — Local auto-ranking** | TF-IDF + lightweight classifier (logistic / naive Bayes) that learns from relevant/irrelevant labels and scores the rest, fully on-device | 📋 Specified   |
+| **3 — Providers**          | Pluggable relevance provider (optional, opt-in embeddings)                                                                                | 🅿️ Backlog     |
 
 See [`doc/zotero-triage-spec.md`](doc/zotero-triage-spec.md) §4 and §12 for details.
 

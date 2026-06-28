@@ -14,7 +14,7 @@ Quem acumula um volume grande de leitura no Zotero não tem hoje uma forma nativ
 - **Tags** (`*`, `**`, `***`, `to-read`, etc.) — funcionam, mas poluem o painel de tags,
   não ordenam de forma limpa e exigem manutenção manual constante.
 - **Coleção "TO READ"** — separa, mas não ordena nem prioriza.
-- **Plugins de status de leitura** (zotero-reading-list, Reading Flow) — resolvem *status*
+- **Plugins de status de leitura** (zotero-reading-list, Reading Flow) — resolvem _status_
   (lido / não lido / lendo), mas não dão um **valor numérico de prioridade ordenável** nem
   qualquer **ranqueamento automático** por relevância.
 
@@ -34,6 +34,7 @@ Esta especificação cobre esse buraco.
 ## 2. Objetivos e não-objetivos
 
 ### Objetivos
+
 - Adicionar uma coluna `Priority` ordenável ao item tree do Zotero.
 - Permitir definir prioridade manualmente via menu de contexto e atalhos de teclado.
 - Persistir o dado de forma que **sincronize** e **não quebre** exportação/citação.
@@ -42,6 +43,7 @@ Esta especificação cobre esse buraco.
 - Ser leve, sem dependências pesadas e sem telemetria.
 
 ### Não-objetivos
+
 - **Não** substituir ferramentas de revisão sistemática (ASReview, Rayyan, Covidence).
 - **Não** criar tipos de item customizados (inviável fora do core do Zotero).
 - **Não** implementar ordenação manual por arrastar-e-soltar (limitação estrutural do Zotero;
@@ -52,10 +54,10 @@ Esta especificação cobre esse buraco.
 
 ## 3. Usuários-alvo e casos de uso
 
-| Persona | Caso de uso |
-|---|---|
-| Pesquisador com pilha grande | "Quero ler primeiro o que é mais relevante para o meu tema atual." |
-| Estudante de pós | "Quero ordenar a fila de leitura sem encher de tags." |
+| Persona                                 | Caso de uso                                                                |
+| --------------------------------------- | -------------------------------------------------------------------------- |
+| Pesquisador com pilha grande            | "Quero ler primeiro o que é mais relevante para o meu tema atual."         |
+| Estudante de pós                        | "Quero ordenar a fila de leitura sem encher de tags."                      |
 | Revisor de literatura (não-sistemática) | "Quero que itens novos entrem já ranqueados conforme o que já achei útil." |
 
 **Fluxo central (Fase 2):** o usuário marca alguns itens como "relevante / não relevante" →
@@ -66,7 +68,7 @@ o usuário ordena por essa coluna e lê de cima para baixo. A cada novo rótulo,
 
 ## 4. Requisitos funcionais (faseados)
 
-### Fase 1 — MVP (coluna manual) — *meta: utilizável em um fim de semana*
+### Fase 1 — MVP (coluna manual) — _meta: utilizável em um fim de semana_
 
 - **F1.1** Registrar uma coluna `Priority` no item tree, ordenável, exibindo um inteiro (ex.: 0–100)
   ou vazio.
@@ -79,7 +81,7 @@ o usuário ordena por essa coluna e lê de cima para baixo. A cada novo rótulo,
 - **F1.6** Painel de preferências mínimo: nome dos níveis, passo dos atalhos, formato da coluna
   (número / estrelas / barra).
 
-### Fase 2 — Priorização automática (local) — *o diferencial*
+### Fase 2 — Priorização automática (local) — _o diferencial_
 
 - **F2.1** Ação "Mark relevant / Mark not relevant" no menu de contexto (rótulos de treino),
   persistidos em Extra (ver §6).
@@ -136,6 +138,7 @@ ReadingPriorityLabel: relevant     # relevant | irrelevant | (ausente = não rot
 ```
 
 Regras:
+
 - `ReadingPriority` — inteiro 0–100; é o que a coluna ordena. Pode ser vazio/ausente.
 - `ReadingPriorityMode` — `manual` trava contra sobrescrita pelo auto; `auto` é recalculável.
 - `ReadingPriorityLabel` — usado só na Fase 2 como sinal de treino.
@@ -165,12 +168,14 @@ Regras:
 ## 8. Arquitetura técnica
 
 ### Plataforma
+
 - Zotero 7 é baseado em Firefox ESR 115; plugins agora usam **manifest.json** (estilo WebExtension)
   em vez de `install.rdf`, e arquitetura **bootstrapped** (`bootstrap.js` com
   `startup/shutdown/install/uninstall`). Plugins continuam tendo acesso pleno às APIs internas do
   Zotero (diferente das WebExtensions do Firefox).
 
 ### `manifest.json` (modelo)
+
 ```json
 {
   "manifest_version": 2,
@@ -191,6 +196,7 @@ Regras:
 ```
 
 ### Stack recomendada
+
 - **Linguagem:** TypeScript.
 - **Scaffold:** `windingwind/zotero-plugin-template` (bootstrap, hot-reload, build com
   zotero-plugin-scaffold, exemplos de APIs).
@@ -200,6 +206,7 @@ Regras:
 - **Referência mínima oficial:** plugin de exemplo `zotero/make-it-red`.
 
 ### Esqueleto de registro de coluna
+
 ```js
 // chamado no startup do bootstrap
 const registeredDataKey = await Zotero.ItemTreeManager.registerColumns({
@@ -219,6 +226,7 @@ await Zotero.ItemTreeManager.unregisterColumns(registeredDataKey);
 ```
 
 ### Camada de ML (Fase 2) — pipeline
+
 1. **Coleta:** itens da coleção/biblioteca ativa → `{id, title, abstractNote, tags?}`.
 2. **Pré-processamento:** lowercase, remoção de stopwords (PT/EN), tokenização simples.
 3. **Vetorização:** TF-IDF (vocabulário construído sobre o corpus corrente).
@@ -232,6 +240,7 @@ await Zotero.ItemTreeManager.unregisterColumns(registeredDataKey);
 > (`RankingProvider`) para que a Fase 3 (embeddings/LLM) seja só um provider alternativo.
 
 ### Estrutura de repositório sugerida
+
 ```
 reading-priority/
 ├── src/
@@ -301,13 +310,13 @@ reading-priority/
 
 ## 12. Roadmap / milestones
 
-| Milestone | Entrega | Critério de pronto |
-|---|---|---|
-| **M1 — MVP** | Coluna manual + menu + atalhos + persistência Extra | Define/ordena/persiste prioridade após restart |
-| **M2 — Prefs & polish** | Painel de preferências, formatos de coluna, i18n PT/EN | Configurável e traduzido |
-| **M3 — Auto local** | TF-IDF + classificador + loop de rótulos | Relevantes sobem mensuravelmente vs. baseline |
-| **M4 — Escopo & UX** | Recompute por coleção, travar manual/auto, curva de saturação | Fluxo contínuo utilizável no dia a dia |
-| **M5 — Providers** | Interface de provider + (opcional) embeddings opt-in | Provider alternativo plugável sem mexer no core |
+| Milestone               | Entrega                                                       | Critério de pronto                              |
+| ----------------------- | ------------------------------------------------------------- | ----------------------------------------------- |
+| **M1 — MVP**            | Coluna manual + menu + atalhos + persistência Extra           | Define/ordena/persiste prioridade após restart  |
+| **M2 — Prefs & polish** | Painel de preferências, formatos de coluna, i18n PT/EN        | Configurável e traduzido                        |
+| **M3 — Auto local**     | TF-IDF + classificador + loop de rótulos                      | Relevantes sobem mensuravelmente vs. baseline   |
+| **M4 — Escopo & UX**    | Recompute por coleção, travar manual/auto, curva de saturação | Fluxo contínuo utilizável no dia a dia          |
+| **M5 — Providers**      | Interface de provider + (opcional) embeddings opt-in          | Provider alternativo plugável sem mexer no core |
 
 > Sugestão estratégica: **publicar o M1 cedo** (já preenche um buraco real e ninguém oferece) e
 > só investir no ML depois de validar, num conjunto seu, que o ranqueamento automático supera de
@@ -318,13 +327,13 @@ reading-priority/
 
 ## 13. Riscos e mitigações
 
-| Risco | Mitigação |
-|---|---|
-| Quebra a cada versão do Zotero | Ficar na API estável (colunas, Extra); testar betas; `strict_max_version` |
-| Dado no Extra vaza em exportações | Namespacing + doc clara; opção de "limpar dados do plugin" |
-| ML fraco com poucos rótulos | Começar com TF-IDF+NB (robusto em baixo volume); mostrar baseline honesto |
-| Colisão de atalho `Alt+NUM` | Atalhos configuráveis + aviso na doc |
-| Bibliotecas compartilhadas (multiusuário) | Fase 1 assume estados por usuário; tratar shared library como backlog |
+| Risco                                     | Mitigação                                                                 |
+| ----------------------------------------- | ------------------------------------------------------------------------- |
+| Quebra a cada versão do Zotero            | Ficar na API estável (colunas, Extra); testar betas; `strict_max_version` |
+| Dado no Extra vaza em exportações         | Namespacing + doc clara; opção de "limpar dados do plugin"                |
+| ML fraco com poucos rótulos               | Começar com TF-IDF+NB (robusto em baixo volume); mostrar baseline honesto |
+| Colisão de atalho `Alt+NUM`               | Atalhos configuráveis + aviso na doc                                      |
+| Bibliotecas compartilhadas (multiusuário) | Fase 1 assume estados por usuário; tratar shared library como backlog     |
 
 ---
 
@@ -336,8 +345,8 @@ reading-priority/
 - `janbaykara/zotero-syllabus` — prioridade por níveis em listas estruturadas.
 - `zotero/make-it-red` — plugin mínimo de exemplo oficial (Zotero 7).
 - `ben-AI-cybersec/zotero-publication-rankings` — exemplo de coluna com base de dados de rankings.
-- ASReview / Rayyan — referência de UX de priorização (alvo a *não* duplicar, mas a se inspirar).
+- ASReview / Rayyan — referência de UX de priorização (alvo a _não_ duplicar, mas a se inspirar).
 
 ---
 
-*Fim da especificação. Ajuste nomes, licença e escopo de fases conforme sua preferência antes de iniciar o M1.*
+_Fim da especificação. Ajuste nomes, licença e escopo de fases conforme sua preferência antes de iniciar o M1._

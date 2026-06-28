@@ -1,4 +1,3 @@
-/* eslint-disable no-undef */
 // Default preferences for Zotero Triage. The build prefixes these with
 // `extensions.zotero.zoterotriage.` and generates the typed PluginPrefsMap.
 pref("format", "number"); // column display: "number" | "stars" | "bar"

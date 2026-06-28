@@ -56,9 +56,13 @@ describe("Reading Priority column", function () {
   });
 
   it("is registered as a custom column with Zotero", function () {
-    const err = (Zotero[config.addonInstance] as any)?.data?.priorityColumnError;
+    const err = (Zotero[config.addonInstance] as any)?.data
+      ?.priorityColumnError;
     const key = findPriorityKey();
-    assert.isString(key, `expected a registered dataKey; registration error: ${err ?? "none"}`);
+    assert.isString(
+      key,
+      `expected a registered dataKey; registration error: ${err ?? "none"}`,
+    );
     assert.isTrue((Zotero.ItemTreeManager as any).isCustomColumn(key));
   });
 
@@ -74,7 +78,10 @@ describe("Reading Priority column", function () {
     // getCustomCellData is exactly what the item tree reads to sort the column.
     const rows = items.map((it) => ({
       priority: getReadingPriority(it),
-      cell: (Zotero.ItemTreeManager as any).getCustomCellData(it, key) as string,
+      cell: (Zotero.ItemTreeManager as any).getCustomCellData(
+        it,
+        key,
+      ) as string,
     }));
 
     // The tree sorts the column by this string via a locale compare.

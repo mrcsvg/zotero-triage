@@ -20,7 +20,8 @@ async function onStartup() {
   try {
     await registerPriorityColumn();
   } catch (e) {
-    (addon.data as any).priorityColumnError = `${e}\n${(e as any)?.stack ?? ""}`;
+    (addon.data as any).priorityColumnError =
+      `${e}\n${(e as any)?.stack ?? ""}`;
     ztoolkit.log("[ReadingPriority] column registration failed", e);
   }
 
