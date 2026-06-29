@@ -38,7 +38,7 @@ async function onStartup() {
 async function onMainWindowLoad(win: _ZoteroTypes.MainWindow): Promise<void> {
   // Recreate ztoolkit bound to this window (template pattern).
   addon.data.ztoolkit = createZToolkit();
-  registerContextMenu();
+  registerContextMenu(win);
   registerShortcuts();
 }
 
