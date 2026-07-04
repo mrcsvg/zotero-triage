@@ -47,7 +47,8 @@ New modules under `src/relevance/`:
   touches the network.**
 - `folder-prompts.ts` — CRUD for `collectionKey → prompt`, persisted in prefs.
 - `score-store.ts` — persistence of `(itemKey, collectionKey) → {score, reason,
-  model, scoredAt, stale}` in IndexedDB. Source of truth for the auto-score.
+  model, scoredAt, stale}` in a per-folder JSON file in the profile (see the
+  persistence note below). Source of truth for the auto-score.
 - `scoring-command.ts` — orchestrates "Score this folder": collect unscored items →
   estimate cost → confirm → call provider in batches → write to `score-store`.
 
@@ -77,9 +78,19 @@ A subtle visual indicator (icon / italic) distinguishes `auto` from `manual`.
    synced. API key lives only in local prefs.
 2. **Folder prompts** (`collectionKey → text`) → `Zotero.Prefs` as a namespaced
    JSON blob (`...folderPrompts`). Few folders carry prompts; no DB needed.
-3. **Scores** (`(itemKey, collectionKey) → {...}`) → **IndexedDB**, store
-   `scores`, composite key `itemKey::collectionKey`. Stores `reason` (short LLM
+3. **Scores** (`(itemKey, collectionKey) → {...}`) → **a per-folder JSON file in
+   the profile**, written via `IOUtils`/`Zotero.File` (e.g.
+   `<profile>/zotero-triage/scores/<collectionKey>.json`). Records use the
+   composite key `itemKey::collectionKey` and store `reason` (short LLM
    justification, used in tooltip) and `scoredAt`.
+
+   > **Storage decision (2026-07-04, supersedes IndexedDB).** The original design
+   > named IndexedDB. IndexedDB availability in the Zotero 7 (Gecko) plugin
+   > sandbox is unconfirmed, whereas `IOUtils`/`Zotero.File` are guaranteed
+   > present and trivial to test under the harness. A personal library's scores
+   > fit comfortably in per-folder JSON files, and keying files by
+   > `collectionKey` means "Score this folder" loads/saves only that folder's
+   > map. Revisit IndexedDB only if scale ever demands indexed queries.
 
 **Unified scale 0–100**, matching manual priority, so sorting a folder mixes
 manual and auto on one ruler.
@@ -150,7 +161,7 @@ when manual.
 
 **M3 — LLM relevance: core (Phase 2)**
 - `RelevanceProvider` interface + `src/relevance/` skeleton
-- `score-store` in IndexedDB (composite key, stale)
+- `score-store` in per-folder profile JSON files (composite key, stale)
 - `folder-prompts` in prefs + "Set relevance prompt" UX
 - `resolvePriority` + column integration (manual-wins, auto/manual indicator)
 - OpenAI provider (structured JSON output)
