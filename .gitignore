@@ -7,7 +7,7 @@ pnpm-lock.yaml
 yarn.lock
 
 # TSC
-tsconfig.tsbuildinfo
+*.tsbuildinfo
 
 # Scaffold
 .env
