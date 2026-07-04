@@ -1,8 +1,16 @@
 # Especificação — Plugin Zotero de Prioridade de Leitura
 
 > Documento de especificação para desenvolvimento de um plugin open-source para Zotero 7+
-> que adiciona uma coluna de **prioridade de leitura**, com opção de **priorização automática**
-> baseada no conteúdo dos itens. Nome de trabalho: **Reading Priority** (substituível).
+> que adiciona uma coluna de **prioridade de leitura**, com opção de **relevância automática
+> assistida por LLM (opt-in)** avaliada contra um prompt definido por coleção. Nome de
+> trabalho: **Reading Priority** (substituível).
+>
+> **Nota de revisão (2026-06-30):** a abordagem da Fase 2 mudou. O desenho original
+> (TF-IDF + classificador local treinado em rótulos relevante/irrelevante) foi substituído
+> por um provider de LLM opt-in que pontua relevância contra um prompt por coleção. A fonte
+> da verdade para o desenho atual é
+> [`docs/plans/2026-06-30-llm-relevance-design.md`](../docs/plans/2026-06-30-llm-relevance-design.md);
+> as seções §4, §5, §6, §8, §10, §12 e §13 abaixo já refletem essa mudança.
 
 ---
 
@@ -25,9 +33,11 @@ Esta especificação cobre esse buraco.
 ### O que diferencia este plugin
 
 1. Uma **coluna numérica de prioridade** ordenável no item tree (o "simples" que falta).
-2. Uma camada **opcional de priorização automática** que aprende com o que você marca como
-   relevante e ranqueia o resto da biblioteca — pensada para **biblioteca crescente** (triagem
-   contínua), e não para corpus fixo de revisão sistemática (caso já bem servido por ASReview).
+2. Uma camada **opcional de relevância automática (opt-in)** que usa um LLM — com a sua
+   própria chave de API — para pontuar itens contra um **prompt definido por coleção**, e
+   ranquear o que ainda não tem prioridade manual. Pensada para **biblioteca crescente**
+   (triagem contínua), e não para corpus fixo de revisão sistemática (caso já bem servido por
+   ASReview). Sem provider configurado, o plugin é 100% local.
 
 ---
 
@@ -38,8 +48,9 @@ Esta especificação cobre esse buraco.
 - Adicionar uma coluna `Priority` ordenável ao item tree do Zotero.
 - Permitir definir prioridade manualmente via menu de contexto e atalhos de teclado.
 - Persistir o dado de forma que **sincronize** e **não quebre** exportação/citação.
-- (Fase 2) Calcular prioridade automaticamente a partir de título + resumo, treinando num
-  classificador leve que roda **localmente**, sem serviço externo.
+- (Fase 2) Pontuar relevância automaticamente a partir de título + resumo, usando um **LLM
+  opt-in** (chave do próprio usuário) avaliado contra um **prompt por coleção**. Desligado por
+  padrão: sem chave configurada, nenhum dado sai do dispositivo.
 - Ser leve, sem dependências pesadas e sem telemetria.
 
 ### Não-objetivos
@@ -48,7 +59,10 @@ Esta especificação cobre esse buraco.
 - **Não** criar tipos de item customizados (inviável fora do core do Zotero).
 - **Não** implementar ordenação manual por arrastar-e-soltar (limitação estrutural do Zotero;
   a coluna numérica é o substituto pragmático).
-- **Não** depender de API de LLM/embeddings na versão base (pode ser provider opcional na Fase 3).
+- **Não** enviar nada à rede por padrão. A relevância por LLM (Fase 2) é **opt-in**: só chama
+  um provider quando o usuário configura a própria chave, e envia apenas título + resumo.
+- **Não** treinar modelos localmente nem embarcar pesos de ML (a abordagem de classificador
+  local foi descartada — ver nota de revisão no topo).
 
 ---
 
@@ -58,11 +72,13 @@ Esta especificação cobre esse buraco.
 | --------------------------------------- | -------------------------------------------------------------------------- |
 | Pesquisador com pilha grande            | "Quero ler primeiro o que é mais relevante para o meu tema atual."         |
 | Estudante de pós                        | "Quero ordenar a fila de leitura sem encher de tags."                      |
-| Revisor de literatura (não-sistemática) | "Quero que itens novos entrem já ranqueados conforme o que já achei útil." |
+| Revisor de literatura (não-sistemática) | "Quero que os itens de uma pasta entrem já ranqueados conforme o tema dela." |
 
-**Fluxo central (Fase 2):** o usuário marca alguns itens como "relevante / não relevante" →
-o modelo treina → todos os itens não rotulados recebem um score na coluna `Priority` →
-o usuário ordena por essa coluna e lê de cima para baixo. A cada novo rótulo, re-ranqueia.
+**Fluxo central (Fase 2):** o usuário define um **prompt de relevância na coleção** (ex.:
+"métodos de inferência causal aplicados a marketing") → abre a pasta e roda **"Pontuar esta
+pasta"** → o comando estima o custo, confirma, e o LLM pontua os itens sem prioridade manual →
+os scores aparecem na coluna `Priority` (0–100) e o usuário ordena e lê de cima para baixo.
+Prioridade manual sempre vence; o auto só preenche o que está em branco.
 
 ---
 
@@ -81,73 +97,104 @@ o usuário ordena por essa coluna e lê de cima para baixo. A cada novo rótulo,
 - **F1.6** Painel de preferências mínimo: nome dos níveis, passo dos atalhos, formato da coluna
   (número / estrelas / barra).
 
-### Fase 2 — Priorização automática (local) — _o diferencial_
+### Fase 2 — Relevância assistida por LLM (opt-in) — _o diferencial_
 
-- **F2.1** Ação "Mark relevant / Mark not relevant" no menu de contexto (rótulos de treino),
-  persistidos em Extra (ver §6).
-- **F2.2** Extração de features a partir de `title` + `abstractNote` (opcionalmente tags e
-  publicação/venue) → vetor TF-IDF.
-- **F2.3** Classificador leve em JS/TS (regressão logística **ou** naive Bayes multinomial),
-  treinado **em memória, localmente**, sem rede.
-- **F2.4** Loop de aprendizado ativo: ao adicionar/alterar um rótulo, re-treinar e recomputar o
-  score (`0–100`) de todos os itens **não rotulados** da coleção/biblioteca ativa, gravando na
-  coluna `Priority`.
-- **F2.5** Comando "Recompute priorities" (menu/botão) para rodar sob demanda numa coleção.
-- **F2.6** Distinção visual/opcional entre prioridade **manual** (travada pelo usuário) e
-  **automática** (recalculável). Prioridade manual nunca é sobrescrita pelo auto a menos que o
-  usuário destrave.
-- **F2.7** Escopo configurável: aplicar à biblioteca inteira, à coleção selecionada ou a uma
-  coleção-alvo definida nas preferências.
+- **F2.1** Interface `RelevanceProvider` (`scoreItems(items, folderPrompt) → {itemKey, score,
+  reason}[]`) e esqueleto `src/relevance/`. O provider é a **única** superfície que faz rede.
+- **F2.2** `score-store` em **IndexedDB**: persiste `(itemKey, collectionKey) → {score, reason,
+  model, scoredAt, stale}`, chave composta `itemKey::collectionKey`. É a fonte da verdade do
+  auto-score (não vai para o Extra — ver §6).
+- **F2.3** Prompt de relevância **por coleção** (`folder-prompts`, em prefs) + ação de menu
+  "Definir prompt de relevância…". Editar o prompt marca os scores daquela pasta como `stale`.
+- **F2.4** `resolvePriority(item, collection)`: prioridade **manual (Extra) sempre vence**;
+  senão o auto-score da pasta aberta; senão vazio. A coluna consulta essa função e distingue
+  visualmente `auto` de `manual`. Escala unificada 0–100.
+- **F2.5** Comando **"Pontuar esta pasta"**: coleta itens sem prioridade (`none`/`stale`) →
+  estima custo (nº de itens, ~tokens, ~preço) e pede confirmação → chama o provider em **lotes**
+  (default 15, concorrência 3), com barra de progresso, cancelável e resumível.
+- **F2.6** Providers concretos: **OpenAI** e **Anthropic**. Saída JSON estruturada e validada
+  (`{itemKey, score 0–100, reason}`); item ausente ou score fora de faixa é descartado, nunca
+  inventado.
+- **F2.7** Painel de preferências: seletor de provider (**default Nenhum → 100% local**), campo
+  de chave mascarado + "Testar chave", seletor de modelo, opções avançadas (lote/concorrência),
+  e texto de consentimento claro sobre o que é enviado à rede.
 
-### Fase 3 — Extensões opcionais (backlog)
+### Fase 3 — Robustez e polish (backlog)
 
-- **F3.1** Provider plugável de embeddings/relevância (modelo local empacotado **ou** API externa
-  opcional, sempre opt-in e desligado por padrão por privacidade).
-- **F3.2** Curva de descoberta de relevantes (gráfico de saturação) para casos quase-SR.
-- **F3.3** Boost por recência/venue (ex.: combinar score de conteúdo com quartil de periódico).
-- **F3.4** Interop explícita com zotero-reading-list / Reading Flow (ler status para alimentar
-  rótulos de treino).
+- **F3.1** Rate-limit / retry com backoff exponencial dentro da camada de provider.
+- **F3.2** Re-pontuar `stale` em lote e "limpar scores da pasta".
+- **F3.3** Herança de prompt entre pastas aninhadas (opt-in; adiada do MVP por YAGNI).
+- **F3.4** Interop explícita com zotero-reading-list / Reading Flow (interação de ordenação,
+  evitar conflito de colunas).
 
 ---
 
 ## 5. Requisitos não-funcionais
 
-- **Privacidade:** nenhum dado sai do dispositivo na base (Fases 1–2). Sem telemetria.
-- **Sem dependências externas em runtime:** ML em JS puro; nada de servidor.
-- **Performance:** treino + recálculo de uma coleção de ~5.000 itens deve rodar em poucos
-  segundos no thread principal; usar processamento em lote/`requestIdleCallback` para não travar a UI.
-- **Sincronização:** por usar o campo Extra (dado padrão do Zotero), os valores sincronizam
-  pelo sync nativo automaticamente.
+- **Privacidade:** **sem rede por padrão** — sem provider configurado, nada sai do dispositivo.
+  Sem telemetria. Quando o usuário ativa a Fase 2, só título + resumo dos itens pontuados vão ao
+  provider escolhido; a chave de API fica em prefs locais e nunca sincroniza.
+- **Custo controlável:** nenhuma chamada de rede acontece sem uma estimativa de custo confirmada
+  pelo usuário (cost guard). Prioridade manual nunca gasta tokens.
+- **Sem dependências externas em runtime na base:** as Fases 1 continua puramente local; a Fase 2
+  só depende do endpoint HTTP do provider quando ativada.
+- **Performance:** pontuar uma coleção grande é I/O-bound (rede); usar lotes + concorrência
+  limitada e progresso cancelável para não travar a UI. A resolução da coluna
+  (`resolvePriority`) deve ser síncrona e barata (lookup em memória/IndexedDB).
+- **Sincronização:** só a prioridade **manual** (campo Extra) sincroniza pelo sync nativo do
+  Zotero. Os auto-scores são por (item, coleção) e vivem em IndexedDB local — não sincronizam
+  e não colidem entre as várias coleções de um item (ver §6).
 - **Compatibilidade:** Zotero 7.0+ (testar na minor estável corrente; ver §8).
-- **Robustez:** itens sem resumo não podem quebrar o pipeline (degradar para só título).
-- **Reversibilidade:** ação para limpar todos os dados do plugin do Extra (uninstall limpo).
+- **Robustez:** itens sem resumo não podem quebrar o pipeline (degradar para só título); falha
+  de rede/chave/rate-limit não corrompe scores existentes.
+- **Reversibilidade:** ação para limpar todos os dados do plugin — linhas no Extra **e** a store
+  de scores no IndexedDB (uninstall limpo).
 
 ---
 
 ## 6. Modelo de dados
 
+Há **dois** tipos de dado, guardados em lugares diferentes de propósito.
+
+### Prioridade manual → campo Extra (item-global, sincroniza)
+
 O Zotero **não** suporta campos customizados de primeira classe. O padrão é gravar no campo
 **Extra**, um par chave-valor por linha, namespaced para evitar colisão com outros plugins.
 
-Formato proposto no Extra do item:
+Formato no Extra do item:
 
 ```
 ReadingPriority: 85
-ReadingPriorityMode: manual        # manual | auto
-ReadingPriorityLabel: relevant     # relevant | irrelevant | (ausente = não rotulado)
 ```
 
-Regras:
-
-- `ReadingPriority` — inteiro 0–100; é o que a coluna ordena. Pode ser vazio/ausente.
-- `ReadingPriorityMode` — `manual` trava contra sobrescrita pelo auto; `auto` é recalculável.
-- `ReadingPriorityLabel` — usado só na Fase 2 como sinal de treino.
+- `ReadingPriority` — inteiro 0–100; a prioridade **manual** definida à mão. É o que a coluna
+  ordena quando presente. Pode ser vazio/ausente.
+- É item-global e sincroniza pelo sync nativo do Zotero.
 - Ler/escrever via `ExtraFieldTool` do **zotero-plugin-toolkit** (lida com o parsing das linhas),
   evitando manipular o texto do Extra na mão.
 
-> **Cuidado de exportação:** lembre o usuário (nas docs) que essas linhas aparecem no campo Extra
-> e podem vazar para algumas exportações/estilos. Manter o prefixo `ReadingPriority` reduz ruído e
+> **Cuidado de exportação:** lembre o usuário (nas docs) que essa linha aparece no campo Extra
+> e pode vazar para algumas exportações/estilos. Manter o prefixo `ReadingPriority` reduz ruído e
 > permite filtrar.
+
+### Auto-score (LLM) → IndexedDB, por (item, coleção)
+
+Um item pode estar em várias coleções com prompts diferentes, então o auto-score é por
+**par (item, coleção)** — não cabe num único campo Extra item-global. Fica no storage local do
+plugin, **não** no Extra, e por isso **não** sincroniza.
+
+- Store `scores` em **IndexedDB**, chave composta `itemKey::collectionKey`.
+- Valor: `{ score: 0–100, reason, model, scoredAt, stale }`.
+- `reason` — justificativa curta do LLM, exibida no tooltip da coluna.
+- `stale` — marcado quando o prompt da coleção muda; o comando re-pontua só os obsoletos.
+- Config de provider e prompts por coleção ficam em `Zotero.Prefs` (`extensions.zotero-triage.*`);
+  a chave de API nunca vai para o Extra nem para o IndexedDB de scores.
+
+### Resolução exibida na coluna
+
+`resolvePriority(item, collection)`: se há `ReadingPriority` (manual) no Extra, vence e a coluna
+mostra esse valor; senão, busca o auto-score da coleção aberta no `score-store`; senão, vazio. Um
+indicador visual sutil distingue `auto` de `manual`.
 
 ---
 
@@ -157,8 +204,8 @@ Regras:
   prefixo automático do Zotero (ex.: `readingpriority-…-priority`) para evitar conflito.
   Habilitável pelo menu de cabeçalho de coluna como qualquer outra.
 - **Formato de exibição** (preferência): número cru, estrelas (0–5 mapeado de 0–100) ou mini-barra.
-- **Menu de contexto:** submenu "Reading Priority" com set rápido, custom, marcar relevante/irrelevante,
-  travar/destravar (manual/auto) e "Recompute".
+- **Menu de contexto:** submenu "Reading Priority" com set rápido, custom e limpar (Fase 1). Na
+  Fase 2, no menu da **coleção**: "Definir prompt de relevância…" e "Pontuar esta pasta".
 - **Atalhos:** configuráveis; avisar que `Alt+NUM` colide com o atalho nativo de ordenar coluna
   (mesmo trade-off que o reading-list documenta).
 - **Sem janelas modais pesadas:** tudo via menu de contexto + preferências.
@@ -181,7 +228,7 @@ Regras:
   "manifest_version": 2,
   "name": "Reading Priority",
   "version": "0.1.0",
-  "description": "Adds a sortable reading-priority column to Zotero, with optional local auto-ranking.",
+  "description": "Adds a sortable reading-priority column to Zotero, with optional opt-in LLM relevance scoring.",
   "author": "SEU_NOME",
   "icons": { "48": "icon.png", "96": "icon@2x.png" },
   "applications": {
@@ -225,19 +272,21 @@ const registeredDataKey = await Zotero.ItemTreeManager.registerColumns({
 await Zotero.ItemTreeManager.unregisterColumns(registeredDataKey);
 ```
 
-### Camada de ML (Fase 2) — pipeline
+### Camada de relevância (Fase 2) — pipeline
 
-1. **Coleta:** itens da coleção/biblioteca ativa → `{id, title, abstractNote, tags?}`.
-2. **Pré-processamento:** lowercase, remoção de stopwords (PT/EN), tokenização simples.
-3. **Vetorização:** TF-IDF (vocabulário construído sobre o corpus corrente).
-4. **Treino:** rótulos `relevant=1 / irrelevant=0` → regressão logística (gradiente em JS) ou
-   naive Bayes multinomial. Começar com poucos exemplos (5–10 por classe já dá sinal útil).
-5. **Inferência:** probabilidade → `score = round(p * 100)` → grava `ReadingPriority` (mode=auto)
-   apenas em itens não travados.
-6. **Re-treino incremental:** disparado por mudança de rótulo (com debounce) ou pelo comando manual.
+1. **Coleta:** itens da coleção aberta sem prioridade (`none`/`stale`) → `{itemKey, title,
+   abstractNote}`. Itens com prioridade manual são pulados (não gastam tokens).
+2. **Estimativa de custo:** contar tokens de `título + resumo` × nº de itens + overhead do prompt,
+   × preço do modelo → diálogo de confirmação (cost guard). Nada de rede antes disso.
+3. **Lotes:** agrupar N itens por chamada (default 15), concorrência limitada (default 3).
+4. **Chamada ao provider:** `RelevanceProvider.scoreItems(items, folderPrompt)` → JSON estruturado
+   `{itemKey, score 0–100, reason}` por item, validado (descarta lixo).
+5. **Persistência:** gravar cada score no `score-store` (IndexedDB), chave `itemKey::collectionKey`.
+   Parcial é salvo — re-rodar retoma de onde parou.
+6. **Exibição:** a coluna chama `resolvePriority` (manual vence; senão auto da pasta aberta).
 
-> Manter o ML num módulo isolado (`src/ranking/`) e atrás de uma interface
-> (`RankingProvider`) para que a Fase 3 (embeddings/LLM) seja só um provider alternativo.
+> Manter a rede isolada num módulo (`src/relevance/`) atrás da interface `RelevanceProvider`, de
+> forma que trocar/adicionar provider (OpenAI, Anthropic, …) não toque no resto do plugin.
 
 ### Estrutura de repositório sugerida
 
@@ -251,11 +300,14 @@ reading-priority/
 │   │   ├── contextMenu.ts      # ações de menu
 │   │   ├── shortcuts.ts        # atalhos de teclado
 │   │   └── extra.ts            # wrapper do ExtraFieldTool (chaves namespaced)
-│   ├── ranking/                # Fase 2
-│   │   ├── RankingProvider.ts  # interface
-│   │   ├── tfidf.ts
-│   │   ├── classifier.ts       # logistic regression / naive bayes
-│   │   └── pipeline.ts         # coleta → treino → score
+│   ├── relevance/              # Fase 2 (opt-in LLM)
+│   │   ├── provider.ts         # interface RelevanceProvider (única superfície de rede)
+│   │   ├── openai.ts           # OpenAIProvider
+│   │   ├── anthropic.ts        # AnthropicProvider
+│   │   ├── score-store.ts      # IndexedDB (itemKey::collectionKey)
+│   │   ├── folder-prompts.ts   # prompt por coleção (prefs)
+│   │   ├── scoring-command.ts  # coleta → estimativa → lotes → grava
+│   │   └── resolve.ts          # resolvePriority (manual vence)
 │   └── prefs/                  # painel de preferências
 ├── addon/
 │   ├── manifest.json
@@ -283,12 +335,14 @@ reading-priority/
 
 ## 10. Testes e validação
 
-- **Unitários:** TF-IDF, classificador (treino/predição com fixtures), parser do Extra.
+- **Unitários (sem rede):** `resolvePriority` (todas as combinações manual/auto/none/stale),
+  `folder-prompts` CRUD, `score-store` (chave composta, stale, get/put), parser/validador do JSON
+  do LLM (incluindo lixo: item faltando, score fora de faixa), estimador de custo.
+- **Provider com fakes:** `RelevanceProvider` mockado com respostas fixas — exercita lotes, falha
+  parcial, cancelamento e retomada. Zero chamadas reais de rede nos testes automatizados.
 - **Integração (manual, perfil de dev):** registro/remoção da coluna; persistência após restart;
-  comportamento com seleção múltipla; itens sem resumo; sync entre dois perfis.
-- **Validação do ranqueamento (Fase 2):** montar um conjunto rotulado de ~100 itens, medir se os
-  relevantes sobem ao topo (ex.: % de relevantes encontrados nos primeiros 20%). Comparar com
-  ordenação por data como baseline antes de afirmar valor.
+  seleção múltipla; itens sem resumo; sync da prioridade manual entre dois perfis; e (opt-in, com
+  chave real, fora do CI) uma pontuação de pasta ponta-a-ponta.
 - **Regressão de versão:** revalidar a cada bump de minor do Zotero (a API de colunas é estável
   desde a 7.0, mas o resto da plataforma pode mudar).
 
@@ -303,8 +357,9 @@ reading-priority/
 - **CONTRIBUTING.md** + template de issue (bug / feature).
 - **Publicação:** repositório no GitHub; opcional submeter ao diretório de plugins do Zotero e
   anunciar no fórum (`Plugins`).
-- **Privacidade:** declarar explicitamente "sem telemetria, sem rede" no README (é diferencial e
-  reduz fricção de adoção).
+- **Privacidade:** declarar explicitamente no README "sem telemetria; sem rede por padrão" e que
+  a relevância por LLM é opt-in com a chave do próprio usuário (é diferencial e reduz fricção de
+  adoção).
 
 ---
 
@@ -314,14 +369,14 @@ reading-priority/
 | ----------------------- | ------------------------------------------------------------- | ----------------------------------------------- |
 | **M1 — MVP**            | Coluna manual + menu + atalhos + persistência Extra           | Define/ordena/persiste prioridade após restart  |
 | **M2 — Prefs & polish** | Painel de preferências, formatos de coluna, i18n PT/EN        | Configurável e traduzido                        |
-| **M3 — Auto local**     | TF-IDF + classificador + loop de rótulos                      | Relevantes sobem mensuravelmente vs. baseline   |
-| **M4 — Escopo & UX**    | Recompute por coleção, travar manual/auto, curva de saturação | Fluxo contínuo utilizável no dia a dia          |
-| **M5 — Providers**      | Interface de provider + (opcional) embeddings opt-in          | Provider alternativo plugável sem mexer no core |
+| **M3 — LLM relevance: core** | Interface `RelevanceProvider`, `score-store` (IndexedDB), prompts por coleção, `resolvePriority` na coluna, provider OpenAI | Pontuar uma pasta grava scores por (item, coleção); manual vence |
+| **M4 — Command, cost & UX**  | Comando "Pontuar esta pasta", cost guard, painel de preferências, provider Anthropic, tooltip + invalidação `stale` | Fluxo opt-in utilizável, com custo estimado antes de rodar |
+| **M5 — Robustness & polish** | Retry/backoff, re-score em lote, herança de prompt (opt-in), interop Reading Flow | Robusto a rate-limit e a bibliotecas grandes |
 
 > Sugestão estratégica: **publicar o M1 cedo** (já preenche um buraco real e ninguém oferece) e
-> só investir no ML depois de validar, num conjunto seu, que o ranqueamento automático supera de
-> forma perceptível a simples ordenação por data. Assim você evita carregar a manutenção da camada
-> de ML antes de ter certeza do valor.
+> só investir na camada de LLM depois. Como ela é **opt-in** e usa a chave do próprio usuário,
+> o risco de custo e privacidade fica com quem escolhe ativá-la — mas o cost guard e o default
+> "Nenhum provider" são requisitos, não enfeites.
 
 ---
 
@@ -331,7 +386,9 @@ reading-priority/
 | ----------------------------------------- | ------------------------------------------------------------------------- |
 | Quebra a cada versão do Zotero            | Ficar na API estável (colunas, Extra); testar betas; `strict_max_version` |
 | Dado no Extra vaza em exportações         | Namespacing + doc clara; opção de "limpar dados do plugin"                |
-| ML fraco com poucos rótulos               | Começar com TF-IDF+NB (robusto em baixo volume); mostrar baseline honesto |
+| Custo inesperado de API de LLM            | Cost guard obrigatório (estimativa + confirmação); manual nunca gasta tokens; default "Nenhum provider" |
+| Dado sensível enviado a terceiros         | Opt-in explícito; só título+resumo; consentimento na UI; chave em prefs locais |
+| Saída do LLM malformada/alucinada         | JSON estruturado validado; score fora de faixa/item ausente é descartado, não inventado |
 | Colisão de atalho `Alt+NUM`               | Atalhos configuráveis + aviso na doc                                      |
 | Bibliotecas compartilhadas (multiusuário) | Fase 1 assume estados por usuário; tratar shared library como backlog     |
 
