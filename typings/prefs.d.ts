@@ -12,6 +12,7 @@ declare namespace _ZoteroTypes {
       "levelHigh": number;
       "levelMedium": number;
       "levelLow": number;
+      "folderPrompts": string;
     };
   }
 }
