@@ -9,6 +9,7 @@ import {
   putScores,
 } from "../relevance/score-store";
 import { runScoring, type ScoringItem } from "../relevance/scoring-command";
+import { refreshScoresForFolder } from "./column";
 
 /**
  * The Zotero-facing "Score this folder" / "Set relevance prompt…" commands.
@@ -127,6 +128,10 @@ export async function scoreSelectedFolder(): Promise<void> {
     notify(getString("relevance-declined"));
     return;
   }
+
+  // Persisted new scores for the open folder — reload the column cache and
+  // repaint so they show immediately (auto values in italic with a tooltip).
+  if (outcome.scored > 0) await refreshScoresForFolder(collection.key);
 
   notify(
     outcome.failedBatches > 0
