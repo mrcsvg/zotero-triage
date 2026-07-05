@@ -11,4 +11,19 @@ pref-levels = Quick levels
 pref-level-high = High
 pref-level-medium = Medium
 pref-level-low = Low
-pref-help = { $name } v{ $version } · no telemetry, no network
+pref-relevance = Relevance (LLM, opt-in)
+pref-provider = Provider
+pref-provider-none =
+    .label = None (fully local)
+pref-provider-openai =
+    .label = OpenAI
+pref-provider-anthropic =
+    .label = Anthropic
+pref-apikey = API key
+pref-model = Model (optional)
+pref-relevance-advanced = Advanced
+pref-batch-size = Batch size
+pref-concurrency = Concurrency
+pref-relevance-consent = Enabling this sends each item's title and abstract to the chosen provider when you run "Score this folder". With Provider = None, nothing leaves your machine. Your API key is stored locally and never synced.
+
+pref-help = { $name } v{ $version } · no telemetry, no network by default

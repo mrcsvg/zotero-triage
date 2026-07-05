@@ -11,4 +11,19 @@ pref-levels = Níveis rápidos
 pref-level-high = Alta
 pref-level-medium = Média
 pref-level-low = Baixa
-pref-help = { $name } v{ $version } · sem telemetria, sem rede
+pref-relevance = Relevância (LLM, opt-in)
+pref-provider = Provedor
+pref-provider-none =
+    .label = Nenhum (100% local)
+pref-provider-openai =
+    .label = OpenAI
+pref-provider-anthropic =
+    .label = Anthropic
+pref-apikey = Chave de API
+pref-model = Modelo (opcional)
+pref-relevance-advanced = Avançado
+pref-batch-size = Tamanho do lote
+pref-concurrency = Concorrência
+pref-relevance-consent = Ao ativar, o título e o resumo de cada item são enviados ao provedor escolhido quando você usa "Pontuar esta pasta". Com Provedor = Nenhum, nada sai da sua máquina. Sua chave de API fica só localmente e nunca é sincronizada.
+
+pref-help = { $name } v{ $version } · sem telemetria, sem rede por padrão

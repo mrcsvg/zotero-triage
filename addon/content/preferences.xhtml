@@ -79,6 +79,93 @@
     ></html:input>
   </hbox>
 </groupbox>
+
+<groupbox>
+  <label><html:h2 data-l10n-id="pref-relevance"></html:h2></label>
+
+  <hbox align="center">
+    <html:label
+      for="zotero-prefpane-__addonRef__-provider"
+      data-l10n-id="pref-provider"
+    ></html:label>
+    <menulist
+      id="zotero-prefpane-__addonRef__-provider"
+      preference="provider"
+      native="true"
+    >
+      <menupopup>
+        <menuitem value="none" data-l10n-id="pref-provider-none" />
+        <menuitem value="openai" data-l10n-id="pref-provider-openai" />
+        <menuitem value="anthropic" data-l10n-id="pref-provider-anthropic" />
+      </menupopup>
+    </menulist>
+  </hbox>
+
+  <hbox align="center">
+    <html:label
+      for="zotero-prefpane-__addonRef__-apiKey"
+      data-l10n-id="pref-apikey"
+    ></html:label>
+    <html:input
+      type="password"
+      id="zotero-prefpane-__addonRef__-apiKey"
+      preference="apiKey"
+      style="flex: 1"
+    ></html:input>
+  </hbox>
+
+  <hbox align="center">
+    <html:label
+      for="zotero-prefpane-__addonRef__-model"
+      data-l10n-id="pref-model"
+    ></html:label>
+    <html:input
+      type="text"
+      id="zotero-prefpane-__addonRef__-model"
+      preference="model"
+      style="flex: 1"
+    ></html:input>
+  </hbox>
+
+  <separator />
+  <label><html:h3 data-l10n-id="pref-relevance-advanced"></html:h3></label>
+
+  <hbox align="center">
+    <html:label
+      for="zotero-prefpane-__addonRef__-batchSize"
+      data-l10n-id="pref-batch-size"
+    ></html:label>
+    <html:input
+      type="number"
+      min="1"
+      max="100"
+      id="zotero-prefpane-__addonRef__-batchSize"
+      preference="batchSize"
+    ></html:input>
+  </hbox>
+  <hbox align="center">
+    <html:label
+      for="zotero-prefpane-__addonRef__-concurrency"
+      data-l10n-id="pref-concurrency"
+    ></html:label>
+    <html:input
+      type="number"
+      min="1"
+      max="10"
+      id="zotero-prefpane-__addonRef__-concurrency"
+      preference="concurrency"
+    ></html:input>
+  </hbox>
+
+  <vbox>
+    <html:label
+      class="pref-relevance-consent"
+      data-l10n-id="pref-relevance-consent"
+      style="white-space: normal; max-width: 46em; opacity: 0.75; margin-top: 0.5em"
+    ></html:label>
+  </vbox>
+</groupbox>
+
 <vbox>
   <html:label
     data-l10n-id="pref-help"
