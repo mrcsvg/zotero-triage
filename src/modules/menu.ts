@@ -2,6 +2,10 @@ import { config } from "../../package.json";
 import { setReadingPriorityForItems, clampPriority } from "./extra";
 import { getLevel } from "./prefs";
 import { getString } from "../utils/locale";
+import {
+  scoreSelectedFolder,
+  setSelectedFolderPrompt,
+} from "./relevance-command";
 
 /**
  * Right-click "Reading Priority" submenu in the item tree (spec F1.2 / F1.4).
@@ -142,5 +146,61 @@ export function registerContextMenu(win: Window = Zotero.getMainWindow()) {
       ],
     },
     itemmenu,
+  );
+}
+
+const COLLECTION_MENU_ID = `${config.addonRef}-collectionmenu-relevance`;
+
+/**
+ * Phase 2 collection context-menu items: "Score this folder" and "Set relevance
+ * prompt…", appended to the native collection menu (`zotero-collectionmenu`).
+ * Like the item submenu, these are created via `ztoolkit.UI` so
+ * `unregisterAll()` removes them on shutdown/unload.
+ */
+export function registerCollectionMenu(win: Window = Zotero.getMainWindow()) {
+  const doc = win?.document;
+  const collectionmenu = doc?.getElementById("zotero-collectionmenu");
+  if (!collectionmenu) return;
+
+  ztoolkit.UI.appendElement(
+    {
+      tag: "menuseparator",
+      id: `${COLLECTION_MENU_ID}-sep`,
+      namespace: "xul",
+      removeIfExists: true,
+    },
+    collectionmenu,
+  );
+
+  ztoolkit.UI.appendElement(
+    {
+      tag: "menuitem",
+      id: `${COLLECTION_MENU_ID}-score`,
+      namespace: "xul",
+      classList: ["menuitem-iconic"],
+      removeIfExists: true,
+      attributes: {
+        label: getString("menu-relevance-score"),
+        image: `chrome://${config.addonRef}/content/icons/favicon@0.5x.png`,
+      },
+      listeners: [
+        { type: "command", listener: () => void scoreSelectedFolder() },
+      ],
+    },
+    collectionmenu,
+  );
+
+  ztoolkit.UI.appendElement(
+    {
+      tag: "menuitem",
+      id: `${COLLECTION_MENU_ID}-prompt`,
+      namespace: "xul",
+      removeIfExists: true,
+      attributes: { label: getString("menu-relevance-prompt") },
+      listeners: [
+        { type: "command", listener: () => setSelectedFolderPrompt() },
+      ],
+    },
+    collectionmenu,
   );
 }

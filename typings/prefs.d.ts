@@ -13,6 +13,11 @@ declare namespace _ZoteroTypes {
       "levelMedium": number;
       "levelLow": number;
       "folderPrompts": string;
+      "provider": string;
+      "apiKey": string;
+      "model": string;
+      "batchSize": number;
+      "concurrency": number;
     };
   }
 }

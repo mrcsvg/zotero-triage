@@ -4,7 +4,7 @@ import {
   registerPriorityColumn,
   unregisterPriorityColumn,
 } from "./modules/column";
-import { registerContextMenu } from "./modules/menu";
+import { registerContextMenu, registerCollectionMenu } from "./modules/menu";
 import { registerShortcuts } from "./modules/shortcuts";
 import { registerPrefPane } from "./modules/prefs";
 
@@ -39,6 +39,7 @@ async function onMainWindowLoad(win: _ZoteroTypes.MainWindow): Promise<void> {
   // Recreate ztoolkit bound to this window (template pattern).
   addon.data.ztoolkit = createZToolkit();
   registerContextMenu(win);
+  registerCollectionMenu(win);
   registerShortcuts();
 }
 
