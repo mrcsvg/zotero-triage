@@ -29,11 +29,7 @@ export function parseFolderPrompts(raw: string | undefined): FolderPromptMap {
   } catch {
     return {};
   }
-  if (
-    typeof parsed !== "object" ||
-    parsed === null ||
-    Array.isArray(parsed)
-  ) {
+  if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
     return {};
   }
   const out: FolderPromptMap = {};
@@ -73,6 +69,36 @@ export function getPromptFromMap(
   collectionKey: string,
 ): string | undefined {
   return map[collectionKey];
+}
+
+/** A prompt resolved by walking up the folder tree, and where it came from. */
+export interface InheritedPrompt {
+  prompt: string;
+  /** The folder that actually holds the prompt (may be an ancestor). */
+  sourceKey: string;
+}
+
+/**
+ * Resolve a folder's effective prompt with opt-in inheritance: return the folder's
+ * own prompt, else the nearest ancestor's, walking up via `parentOf` until a
+ * non-empty prompt is found or the root is reached. Blank/whitespace prompts are
+ * treated as unset. Cycle-guarded. Pure — the caller supplies the lookups.
+ */
+export function resolveInheritedPrompt(
+  startKey: string,
+  promptOf: (key: string) => string | undefined,
+  parentOf: (key: string) => string | null,
+): InheritedPrompt | null {
+  const seen = new Set<string>();
+  let cur: string | null = startKey;
+  while (cur !== null && !seen.has(cur)) {
+    seen.add(cur);
+    const p = promptOf(cur);
+    if (p !== undefined && p.trim() !== "")
+      return { prompt: p, sourceKey: cur };
+    cur = parentOf(cur);
+  }
+  return null;
 }
 
 // ---------------------------------------------------------------------------

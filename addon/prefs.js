@@ -13,3 +13,4 @@ pref("apiKey", ""); // the active provider's API key (local prefs only)
 pref("model", ""); // model override; empty = the provider's default
 pref("batchSize", 15); // items per provider call
 pref("concurrency", 3); // max provider calls in flight
+pref("inheritPrompts", false); // nested folders inherit an ancestor's prompt (opt-in)

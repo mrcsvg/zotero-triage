@@ -26,6 +26,7 @@ export type FluentMessageId =
   | 'pref-format-number'
   | 'pref-format-stars'
   | 'pref-help'
+  | 'pref-inherit-prompts'
   | 'pref-level-high'
   | 'pref-level-low'
   | 'pref-level-medium'

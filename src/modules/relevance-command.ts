@@ -1,7 +1,12 @@
 import { config } from "../../package.json";
 import { getString } from "../utils/locale";
+import { getPref } from "../utils/prefs";
 import { getReadingPriority } from "./extra";
-import { getFolderPrompt, setFolderPrompt } from "../relevance/folder-prompts";
+import {
+  getFolderPrompt,
+  resolveInheritedPrompt,
+  setFolderPrompt,
+} from "../relevance/folder-prompts";
 import { getScoringConfig } from "../relevance/config";
 import {
   loadFolderScores,
@@ -33,6 +38,23 @@ function selectedCollection(): Zotero.Collection | null {
   return coll || null;
 }
 
+/**
+ * The prompt to score a folder against. Normally the folder's own prompt; with
+ * the opt-in `inheritPrompts` pref, the nearest ancestor's prompt if the folder
+ * has none (walking up via collection parents).
+ */
+function effectivePrompt(collection: Zotero.Collection): string | undefined {
+  if (!getPref("inheritPrompts")) return getFolderPrompt(collection.key);
+  const libraryID = collection.libraryID;
+  const parentOf = (key: string): string | null => {
+    const col = Zotero.Collections.getByLibraryAndKey(libraryID, key) as
+      Zotero.Collection | false;
+    return col && col.parentKey ? col.parentKey : null;
+  };
+  return resolveInheritedPrompt(collection.key, getFolderPrompt, parentOf)
+    ?.prompt;
+}
+
 /** Build the scoring inputs for a collection: text + manual value + prior score. */
 async function collectItems(
   collection: Zotero.Collection,
@@ -58,7 +80,7 @@ export async function scoreSelectedFolder(): Promise<void> {
     return;
   }
 
-  const prompt = getFolderPrompt(collection.key);
+  const prompt = effectivePrompt(collection);
   if (!prompt) {
     notify(getString("relevance-no-prompt"), "fail");
     return;

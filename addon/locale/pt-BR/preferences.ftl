@@ -24,6 +24,8 @@ pref-model = Modelo (opcional)
 pref-relevance-advanced = Avançado
 pref-batch-size = Tamanho do lote
 pref-concurrency = Concorrência
+pref-inherit-prompts =
+    .label = Subpastas herdam o prompt de relevância de uma pasta pai
 pref-relevance-consent = Ao ativar, o título e o resumo de cada item são enviados ao provedor escolhido quando você usa "Pontuar esta pasta". Com Provedor = Nenhum, nada sai da sua máquina. Sua chave de API fica só localmente e nunca é sincronizada.
 
 pref-help = { $name } v{ $version } · sem telemetria, sem rede por padrão

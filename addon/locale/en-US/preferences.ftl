@@ -24,6 +24,8 @@ pref-model = Model (optional)
 pref-relevance-advanced = Advanced
 pref-batch-size = Batch size
 pref-concurrency = Concurrency
+pref-inherit-prompts =
+    .label = Nested folders inherit a parent folder's relevance prompt
 pref-relevance-consent = Enabling this sends each item's title and abstract to the chosen provider when you run "Score this folder". With Provider = None, nothing leaves your machine. Your API key is stored locally and never synced.
 
 pref-help = { $name } v{ $version } · no telemetry, no network by default

@@ -18,6 +18,7 @@ declare namespace _ZoteroTypes {
       "model": string;
       "batchSize": number;
       "concurrency": number;
+      "inheritPrompts": boolean;
     };
   }
 }
