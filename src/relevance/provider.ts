@@ -41,6 +41,27 @@ export interface RelevanceProvider {
   ): Promise<ScoreResult[]>;
 }
 
+/** HTTP statuses worth retrying: rate limit, transient, and gateway errors. */
+const RETRYABLE_STATUS = new Set([408, 429, 500, 502, 503, 504, 529]);
+
+/**
+ * A failure from a provider call. Carries the HTTP status (absent for a
+ * transport/network failure) and a `retryable` flag the retry layer reads:
+ * rate-limit/transient statuses and network errors are worth retrying; a 400 or
+ * 401 (bad request / bad key) is fatal and must not be.
+ */
+export class ProviderError extends Error {
+  readonly status?: number;
+  readonly retryable: boolean;
+
+  constructor(message: string, status?: number) {
+    super(message);
+    this.name = "ProviderError";
+    this.status = status;
+    this.retryable = status === undefined || RETRYABLE_STATUS.has(status);
+  }
+}
+
 const MIN_SCORE = 0;
 const MAX_SCORE = 100;
 

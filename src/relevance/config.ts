@@ -16,6 +16,7 @@ import { getPref } from "../utils/prefs";
 import { AnthropicProvider } from "./anthropic-provider";
 import { OpenAIProvider } from "./openai-provider";
 import { type RelevanceProvider } from "./provider";
+import { withRetryProvider } from "./retry";
 import { type ModelPricing } from "./scoring";
 
 export type ProviderName = "none" | "openai" | "anthropic";
@@ -102,7 +103,8 @@ export function getScoringConfig(): ScoringConfig | null {
   if (!instance) return null;
 
   return {
-    provider: instance,
+    // Retry transient failures (429/5xx/network) transparently per batch.
+    provider: withRetryProvider(instance),
     model,
     pricing: pricingFor(model),
     batchSize: positiveInt(getPref("batchSize"), 15),

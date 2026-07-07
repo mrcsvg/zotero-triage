@@ -13,6 +13,7 @@
 
 import {
   normalizeScoreResults,
+  ProviderError,
   type RelevanceProvider,
   type ScoreItemInput,
   type ScoreResult,
@@ -118,18 +119,27 @@ export class OpenAIProvider implements RelevanceProvider {
     if (items.length === 0) return [];
     const body = buildOpenAIRequestBody(items, folderPrompt, this.model);
 
-    const res = await fetch(this.endpoint, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${this.apiKey}`,
-      },
-      body: JSON.stringify(body),
-    });
+    let res: Response;
+    try {
+      res = await fetch(this.endpoint, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${this.apiKey}`,
+        },
+        body: JSON.stringify(body),
+      });
+    } catch (e) {
+      // Transport/network failure — no status, retryable.
+      throw new ProviderError(`OpenAI request failed: ${e}`);
+    }
 
     if (!res.ok) {
       const detail = await res.text().catch(() => "");
-      throw new Error(`OpenAI request failed (${res.status}): ${detail}`);
+      throw new ProviderError(
+        `OpenAI request failed (${res.status}): ${detail}`,
+        res.status,
+      );
     }
 
     const json = await res.json();

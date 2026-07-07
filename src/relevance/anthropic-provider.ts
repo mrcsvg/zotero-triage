@@ -20,6 +20,7 @@
 
 import {
   normalizeScoreResults,
+  ProviderError,
   type RelevanceProvider,
   type ScoreItemInput,
   type ScoreResult,
@@ -130,19 +131,28 @@ export class AnthropicProvider implements RelevanceProvider {
     if (items.length === 0) return [];
     const body = buildAnthropicRequestBody(items, folderPrompt, this.model);
 
-    const res = await fetch(this.endpoint, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-api-key": this.apiKey,
-        "anthropic-version": ANTHROPIC_VERSION,
-      },
-      body: JSON.stringify(body),
-    });
+    let res: Response;
+    try {
+      res = await fetch(this.endpoint, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-key": this.apiKey,
+          "anthropic-version": ANTHROPIC_VERSION,
+        },
+        body: JSON.stringify(body),
+      });
+    } catch (e) {
+      // Transport/network failure — no status, retryable.
+      throw new ProviderError(`Anthropic request failed: ${e}`);
+    }
 
     if (!res.ok) {
       const detail = await res.text().catch(() => "");
-      throw new Error(`Anthropic request failed (${res.status}): ${detail}`);
+      throw new ProviderError(
+        `Anthropic request failed (${res.status}): ${detail}`,
+        res.status,
+      );
     }
 
     const json = await res.json();
