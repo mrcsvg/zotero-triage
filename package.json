@@ -2,7 +2,7 @@
   "name": "zotero-triage",
   "type": "module",
   "version": "0.0.1",
-  "description": "Zotero Triage — a sortable reading-priority column for Zotero, with optional local auto-ranking.",
+  "description": "Zotero Triage — a sortable, fully local reading-priority column for Zotero.",
   "config": {
     "addonName": "Zotero Triage",
     "addonID": "zotero-triage@mrcsvg.github.io",
