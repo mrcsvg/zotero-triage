@@ -5,10 +5,9 @@ body:
   - type: markdown
     attributes:
       value: |
-        Thanks for the suggestion. Note the project's scope: a sortable
-        reading-priority column, plus an optional **local** auto-ranking layer.
-        It deliberately does **not** aim to replace systematic-review tools
-        (ASReview, Rayyan) — see the README and `doc/zotero-triage-spec.md`.
+        Thanks for the suggestion. Note the project's scope: a sortable,
+        fully local reading-priority column. It deliberately does **not** aim to
+        replace systematic-review tools (ASReview, Rayyan) — see the README.
   - type: checkboxes
     id: preflight
     attributes:
@@ -16,7 +15,7 @@ body:
       options:
         - label: I searched existing issues and this isn't a duplicate.
           required: true
-        - label: This fits the project's scope (a priority column / local ranking), not systematic review.
+        - label: This fits the project's scope (a priority column), not systematic review.
           required: true
   - type: textarea
     id: problem
@@ -29,18 +28,6 @@ body:
     id: proposal
     attributes:
       label: Proposed solution
-    validations:
-      required: true
-  - type: dropdown
-    id: phase
-    attributes:
-      label: Which area does this touch?
-      description: See the roadmap in the README.
-      options:
-        - "Phase 1 — manual priority column / menu / shortcuts"
-        - "Phase 2 — local auto-ranking (TF-IDF + classifier)"
-        - "Phase 3 — pluggable providers / extensions"
-        - "Not sure"
     validations:
       required: true
   - type: textarea

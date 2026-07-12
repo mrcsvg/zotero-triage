@@ -5,4 +5,3 @@ pref("step", 10); // keyboard raise/lower increment
 pref("levelHigh", 80); // quick-level "High"
 pref("levelMedium", 50); // quick-level "Medium"
 pref("levelLow", 20); // quick-level "Low"
-pref("folderPrompts", "{}"); // JSON blob: collectionKey -> relevance prompt (Phase 2)

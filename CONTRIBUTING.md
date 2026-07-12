@@ -7,15 +7,12 @@ welcome.
 ## Scope
 
 Before proposing a feature, check it fits the project's intent (see the
-[README](README.md) and the full spec in
-[`doc/zotero-triage-spec.md`](doc/zotero-triage-spec.md)):
+[README](README.md)):
 
-- ✅ A simple, sortable **numeric priority column** (Phase 1).
-- ✅ An optional, **on-device** auto-ranking layer — TF-IDF + a lightweight
-  classifier, no network, no telemetry (Phase 2).
+- ✅ A simple, sortable **numeric priority column**.
 - ❌ **Not** a systematic-review tool (ASReview / Rayyan / Covidence cover that).
-- ❌ **No** required cloud/LLM dependency in the base — any provider stays opt-in
-  and off by default (Phase 3).
+- ❌ **No** telemetry and **no network** — the plugin is fully local. Keep it
+  that way.
 
 ## Development setup
 
@@ -64,7 +61,6 @@ src/
     ├── prefs.ts        # preferences + display formatting
     └── extra.ts        # namespaced read/write of the Extra field
 addon/                  # bootstrap.js, manifest.json, locales (.ftl), content
-doc/                    # full spec + launch notes
 test/                   # mocha unit tests
 ```
 
@@ -80,7 +76,7 @@ test/                   # mocha unit tests
   Extra text. This is what makes values sync via Zotero's native sync.
 - **i18n:** user-facing strings live in `addon/locale/{en-US,pt-BR}/*.ftl` (Fluent)
   and are read via `getString(...)`. Add new strings to **all** locales.
-- **No telemetry, no network** in Phases 1–2. Keep it that way.
+- **No telemetry, no network.** The plugin is fully local — keep it that way.
 - **Pure, testable logic:** formatting/scoring helpers should be pure so they can
   be unit-tested outside Zotero (see `test/format.test.ts`).
 

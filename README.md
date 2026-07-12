@@ -3,13 +3,8 @@
 [![Zotero 7](https://img.shields.io/badge/Zotero-7-green?style=flat-square&logo=zotero&logoColor=CC2936)](https://www.zotero.org)
 [![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL--3.0-blue?style=flat-square)](LICENSE)
 
-A sortable **reading-priority column** for Zotero 7+, with an optional
-LLM-assisted relevance layer (planned, opt-in). Built to answer the one question
-Zotero can't answer natively: **"what do I read first?"**
-
-> **Status:** Phase 1 (manual priority MVP) is implemented and usable. The
-> opt-in LLM relevance layer (Phase 2) is specified but **not yet built**.
-> See [Roadmap](#roadmap).
+A sortable **reading-priority column** for Zotero 7+. Built to answer the one
+question Zotero can't answer natively: **"what do I read first?"**
 
 ---
 
@@ -21,15 +16,12 @@ order it by priority. The usual workarounds all fall short:
 - **Tags** (`*`, `**`, `to-read`) clutter the tag pane and don't sort cleanly.
 - **A "TO READ" collection** separates but doesn't order.
 - **Reading-status plugins** (zotero-reading-list, Reading Flow) track _status_
-  (read / unread / reading) but give no **sortable numeric priority** and no
-  automatic ranking.
+  (read / unread / reading) but give no **sortable numeric priority**.
 
-Zotero Triage fills that gap with a simple numeric column you can sort on — and,
-later, an **opt-in** LLM that scores each item's relevance against a prompt you
-set per collection. No provider configured means no network: the plugin stays
-100% local.
+Zotero Triage fills that gap with a simple numeric column you can sort on — and
+nothing more. No provider, no telemetry, no network: the plugin stays 100% local.
 
-## Features (Phase 1 — implemented)
+## Features
 
 - **Sortable `Priority` column** in the item tree, registered via
   `Zotero.ItemTreeManager`. Numeric sort is correct (100 sorts above 20, not
@@ -51,13 +43,8 @@ set per collection. No provider configured means no network: the plugin stays
 
 ## Privacy
 
-No telemetry, ever. **No network by default** — with no provider configured, the
-plugin is fully local and nothing leaves your device.
-
-The Phase 2 relevance layer is **opt-in**: only when you configure your own API
-key does the plugin call a provider, and it sends only each item's **title and
-abstract** to the provider you chose. Your API key stays in local preferences and
-is never synced. Manual priorities and everything else remain on-device.
+No telemetry, ever. **No network** — the plugin is fully local and nothing
+leaves your device.
 
 ## Install
 
@@ -98,25 +85,11 @@ src/
     ├── prefs.ts        # preferences + display formatting
     └── extra.ts        # namespaced read/write of the Extra field
 addon/                  # bootstrap.js, manifest.json, locales, content
-doc/                    # full spec + launch notes
 test/                   # mocha unit tests (column, extra, format, startup)
 ```
 
-The full design spec lives in [`doc/zotero-triage-spec.md`](doc/zotero-triage-spec.md).
-
-## Roadmap
-
-| Phase                       | Deliverable                                                                                                                                             | Status         |
-| --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------- |
-| **1 — MVP**                 | Manual priority column + menu + shortcuts + Extra persistence                                                                                           | ✅ Implemented |
-| **2 — LLM relevance**       | Opt-in LLM (your own API key) scores items against a **per-collection prompt**; manual priority always wins; scored on demand with a cost estimate first | 📋 Specified   |
-| **3 — Robustness & polish** | Retry/backoff, bulk re-score, prompt inheritance for nested folders, Reading Flow interop                                                               | 🅿️ Backlog     |
-
-Privacy: **no network by default.** Relevance scoring only reaches a provider
-once you configure a key, and it sends only each item's title and abstract.
-
-See [`docs/plans/2026-06-30-llm-relevance-design.md`](docs/plans/2026-06-30-llm-relevance-design.md)
-for the full design, and [`doc/zotero-triage-spec.md`](doc/zotero-triage-spec.md) §4/§12 for the original spec.
+Contributing guidelines and agentic-development conventions live in
+[`CONTRIBUTING.md`](CONTRIBUTING.md) and [`CLAUDE.md`](CLAUDE.md).
 
 ## Data model
 
@@ -127,11 +100,9 @@ so it syncs and exports cleanly:
 ReadingPriority: 85
 ```
 
-Only the **manual** priority lives in Extra (item-global, syncs cleanly). Phase 2
-auto-scores are **per (item, collection)** and live in the plugin's local storage
-(IndexedDB), not in Extra — so they never sync and never collide across the
-different collections an item may belong to. Manual always wins: an auto-score
-only fills items you haven't prioritized by hand.
+Storing the value in Extra means it rides Zotero's native sync and survives
+export — no separate database, nothing that can drift out of sync with your
+library.
 
 ## License
 
