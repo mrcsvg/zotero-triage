@@ -9,10 +9,12 @@ welcome.
 Before proposing a feature, check it fits the project's intent (see the
 [README](README.md)):
 
-- ✅ A simple, sortable **numeric priority column**.
+- ✅ A simple, sortable **numeric priority column**, plus the **opt-in** AI
+  classification that scores a collection into that same column.
 - ❌ **Not** a systematic-review tool (ASReview / Rayyan / Covidence cover that).
-- ❌ **No** telemetry and **no network** — the plugin is fully local. Keep it
-  that way.
+- ❌ **No telemetry, ever.** The only sanctioned network I/O is the opt-in AI
+  classification (issue #38); it sends data only to the user's configured provider
+  and only when invoked. Don't add any other network calls or phone-home behavior.
 
 ## Development setup
 
@@ -76,7 +78,8 @@ test/                   # mocha unit tests
   Extra text. This is what makes values sync via Zotero's native sync.
 - **i18n:** user-facing strings live in `addon/locale/{en-US,pt-BR}/*.ftl` (Fluent)
   and are read via `getString(...)`. Add new strings to **all** locales.
-- **No telemetry, no network.** The plugin is fully local — keep it that way.
+- **No telemetry.** Network I/O is limited to the opt-in AI classification (only
+  to the user's configured provider, only when invoked); don't add any other.
 - **Pure, testable logic:** formatting/scoring helpers should be pure so they can
   be unit-tested outside Zotero (see `test/format.test.ts`).
 

@@ -8,18 +8,29 @@ too.
 ## What this project is (and is not)
 
 Zotero Triage is a **Zotero 7+ plugin** that adds one thing done well: a
-sortable, **fully local** reading-priority column. That focus is the product.
+sortable reading-priority column — **local by default**, with an **optional**
+AI classifier that can fill it in for a collection. That focus is the product.
 
 - ✅ In scope: the priority column, its display formats, the context menu,
-  keyboard shortcuts, preferences, and Extra-field persistence.
+  keyboard shortcuts, preferences, Extra-field persistence, and the **optional
+  AI classification** feature (collection-level, opt-in) — see below.
 - ❌ Out of scope: systematic-review workflows (ASReview / Rayyan / Covidence).
-- 🚫 **No network, no telemetry.** The plugin must stay 100% local. Do not add
-  `fetch`, analytics, remote calls, or any dependency that phones home.
+- 🚫 **No telemetry, ever.** No analytics, no phone-home. The **only** sanctioned
+  network I/O is the AI classification call described below — nothing else may add
+  `fetch`, remote calls, or a dependency that talks to the network.
 
-> An LLM-assisted relevance layer was explored and **deliberately removed** for
-> the V1 release. Do **not** reintroduce it — or any other cloud/LLM feature —
-> without an explicit decision from the maintainer recorded in an issue first.
-> If asked to add network behavior, stop and confirm scope before writing code.
+> **AI classification (issue #38).** An LLM-assisted layer scores a collection's
+> items 0–100 via the user's own API key (Anthropic / OpenAI now; Vertex later).
+> It is **opt-in**: no key set + action not invoked ⇒ zero network calls. When
+> invoked, item metadata + the per-collection project context are sent **only** to
+> the user-configured provider. Boundaries that must hold: no telemetry; network
+> only inside the classify action; the API key stays local (a profile pref, not
+> synced) and is never logged; the result is written to `ReadingPriority` through
+> `extra.ts` like any other value.
+>
+> Any **further** expansion of network behavior (new providers, new endpoints,
+> sending data anywhere else) still needs an explicit maintainer decision recorded
+> in an issue first. If asked to broaden it, stop and confirm scope before coding.
 
 ## Commands
 
@@ -51,7 +62,14 @@ src/
 │   ├── menu.ts         # context-menu actions
 │   ├── shortcuts.ts    # keyboard shortcuts
 │   ├── prefs.ts        # preferences + display formatting (pure helpers)
-│   └── extra.ts        # namespaced read/write of the Extra field
+│   ├── extra.ts        # namespaced read/write of the Extra field
+│   ├── collectionContext.ts  # per-collection AI prompt (JSON pref)
+│   ├── classify.ts     # collection "Classify with AI…" menu + dialog + orchestration
+│   └── ai/             # provider abstraction
+│       ├── prompt.ts   # pure: build messages + parse response (unit-tested)
+│       ├── provider.ts # picks provider from prefs (Anthropic / OpenAI)
+│       ├── anthropic.ts / openai.ts  # Zotero.HTTP calls
+│       └── http.ts     # shared error helper
 └── utils/              # ztoolkit, prefs, window, locale helpers
 addon/                  # bootstrap.js, manifest.json, prefs.js, locales, content
 test/                   # mocha unit tests

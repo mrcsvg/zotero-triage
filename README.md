@@ -18,8 +18,11 @@ order it by priority. The usual workarounds all fall short:
 - **Reading-status plugins** (zotero-reading-list, Reading Flow) track _status_
   (read / unread / reading) but give no **sortable numeric priority**.
 
-Zotero Triage fills that gap with a simple numeric column you can sort on — and
-nothing more. No provider, no telemetry, no network: the plugin stays 100% local.
+Zotero Triage fills that gap with a simple numeric column you can sort on. It's
+local by default and has **no telemetry**. An **optional** AI classifier
+(bring-your-own API key) can score a whole collection for you — but only when you
+explicitly ask it to; see [Privacy](#privacy) and
+[AI classification](#ai-classification-optional).
 
 ## Features
 
@@ -38,13 +41,36 @@ nothing more. No provider, no telemetry, no network: the plugin stays 100% local
 - **Persistence in the Extra field** as a namespaced key (`ReadingPriority: 85`),
   so values **sync via Zotero's native sync** and survive restarts —
   see [`src/modules/extra.ts`](src/modules/extra.ts).
-- **Preferences panel:** level values, shortcut step, and column format.
+- **AI classification (optional):** right-click a collection → _Classify with AI…_,
+  describe your project context, and let your configured provider score every item
+  0–100. Off unless you set an API key. See below.
+- **Preferences panel:** level values, shortcut step, column format, and AI provider/key.
 - **i18n:** English (en-US) and Portuguese (pt-BR).
 
 ## Privacy
 
-No telemetry, ever. **No network** — the plugin is fully local and nothing
-leaves your device.
+**No telemetry, ever.** The core priority column is fully local — set, sort, and
+sync your priorities without anything leaving your device.
+
+The only feature that uses the network is the **optional AI classification**, and
+only when you invoke it. See below for exactly what is sent.
+
+## AI classification (optional)
+
+This feature is **off by default** and requires your own API key. When — and only
+when — you run _Classify with AI…_ on a collection:
+
+- Each item's metadata (title, abstract, creators, year, item type) **and** the
+  project context you type are sent to the **provider you configured**
+  (**Anthropic** or **OpenAI**; Vertex/Google planned).
+- The model returns a 0–100 reading priority per item, saved to the same
+  `ReadingPriority` Extra field as manual values.
+
+Your **API key is stored locally** in the plugin's Zotero preferences (in your
+profile), is **not** part of Zotero's data sync, and is never logged. If you never
+set a key and never run the action, the plugin makes **no network calls**.
+
+Configure it in **Preferences → Zotero Triage → AI classification**.
 
 ## Install
 
@@ -83,9 +109,12 @@ src/
     ├── menu.ts         # context-menu actions
     ├── shortcuts.ts    # keyboard shortcuts
     ├── prefs.ts        # preferences + display formatting
-    └── extra.ts        # namespaced read/write of the Extra field
+    ├── extra.ts        # namespaced read/write of the Extra field
+    ├── collectionContext.ts  # per-collection AI prompt storage
+    ├── classify.ts     # collection "Classify with AI…" menu + dialog
+    └── ai/             # provider abstraction (prompt, Anthropic, OpenAI)
 addon/                  # bootstrap.js, manifest.json, locales, content
-test/                   # mocha unit tests (column, extra, format, startup)
+test/                   # mocha unit tests (column, extra, format, ai-prompt, startup)
 ```
 
 Contributing guidelines and agentic-development conventions live in
