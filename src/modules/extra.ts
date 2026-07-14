@@ -58,6 +58,21 @@ export async function setReadingPriorityForItems(
   });
 }
 
+/** Set per-item priorities (possibly different values) in one transaction. */
+export async function setReadingPrioritiesForItems(
+  entries: Array<{ item: Zotero.Item; value: number | null }>,
+): Promise<void> {
+  if (!entries?.length) return;
+  await Zotero.DB.executeTransaction(async () => {
+    for (const { item, value } of entries) {
+      await ztoolkit.ExtraField.setExtraField(item, EXTRA_KEY, encode(value), {
+        save: false,
+      });
+      await item.save();
+    }
+  });
+}
+
 /** Bump each item's priority by delta, clamped; unset is treated as 0. */
 export async function bumpReadingPriorityForItems(
   items: Zotero.Item[],

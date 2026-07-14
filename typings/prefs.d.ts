@@ -12,6 +12,10 @@ declare namespace _ZoteroTypes {
       "levelHigh": number;
       "levelMedium": number;
       "levelLow": number;
+      "aiProvider": string;
+      "aiModel": string;
+      "aiApiKey": string;
+      "collectionContexts": string;
     };
   }
 }
