@@ -1,6 +1,7 @@
 import "./_setup";
 import { assert } from "chai";
 import {
+  buildManualPrompt,
   buildMessages,
   parsePriorityResponse,
   type ItemContext,
@@ -38,6 +39,26 @@ describe("AI classification helpers", function () {
     it("falls back to a placeholder when context is blank", function () {
       const { user } = buildMessages("   ", items);
       assert.include(user, "no additional context");
+    });
+  });
+
+  describe("manual (offline) prompt", function () {
+    it("is one self-contained block with the instruction, context, and keys", function () {
+      const text = buildManualPrompt("my ML project", items);
+      // Everything the automated system+user prompt carries, in one paste-able string.
+      assert.include(text, "0 to 100");
+      assert.include(text, "JSON array");
+      assert.include(text, "my ML project");
+      assert.include(text, "AAA");
+      assert.include(text, "BBB");
+    });
+
+    it("produces a reply the parser round-trips back to priorities", function () {
+      // A plausible model reply to the manual prompt parses via the same helper.
+      const reply = '[{"key":"AAA","priority":88},{"key":"BBB","priority":12}]';
+      const map = parsePriorityResponse(reply, ["AAA", "BBB"]);
+      assert.equal(map.get("AAA"), 88);
+      assert.equal(map.get("BBB"), 12);
     });
   });
 
