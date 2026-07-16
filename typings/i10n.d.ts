@@ -10,6 +10,7 @@ export type FluentMessageId =
   | 'dialog-context-label'
   | 'dialog-context-placeholder'
   | 'dialog-network-note'
+  | 'dialog-save'
   | 'item-info-row-example-label'
   | 'item-section-example1-head-text'
   | 'item-section-example1-sidenav-tooltip'
@@ -51,4 +52,5 @@ export type FluentMessageId =
   | 'status-classify-nokey'
   | 'status-classify-running'
   | 'status-cleared'
+  | 'status-context-saved'
   | 'status-set';
