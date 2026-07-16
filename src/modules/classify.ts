@@ -58,8 +58,14 @@ async function openContextDialog(initial: string): Promise<string | null> {
       },
       properties: { value: initial },
       styles: {
+        // The `rows` attribute alone isn't honored inside the dialog's XUL
+        // flex layout (the cell collapses the textarea to a single line), so
+        // pin an explicit height. Inline styles beat the platform stylesheet.
+        boxSizing: "border-box",
         width: "48em",
         maxWidth: "80vw",
+        height: "18em",
+        minHeight: "9em",
         resize: "vertical",
         fontFamily: "inherit",
       },
