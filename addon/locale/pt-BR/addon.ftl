@@ -16,8 +16,10 @@ dialog-context-label = Contexto do projeto (usado como prompt de classificação
 dialog-context-placeholder = Descreva o que torna um item prioritário neste projeto — temas, perguntas, métodos, critérios de inclusão/exclusão…
 dialog-network-note = Ao executar, os metadados de cada item e este contexto são enviados ao provedor configurado nas Preferências.
 dialog-classify-confirm = Salvar e Classificar
+dialog-save = Salvar prompt
 dialog-cancel = Cancelar
 
+status-context-saved = Prompt salvo
 status-set = Prioridade { $value } definida em { $count } item(ns)
 status-cleared = Prioridade removida de { $count } item(ns)
 status-classify-running = Classificando { $count } item(ns)…
