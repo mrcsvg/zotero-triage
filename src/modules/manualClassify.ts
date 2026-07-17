@@ -2,6 +2,7 @@ import { config } from "../../package.json";
 import { getString } from "../utils/locale";
 import {
   getCollectionContext,
+  getEffectiveContext,
   setCollectionContext,
 } from "./collectionContext";
 import { setReadingPrioritiesForItems } from "./extra";
@@ -34,9 +35,9 @@ function notify(text: string, type: "success" | "fail" = "success") {
     .show();
 }
 
-/** The regular items of the currently selected collection, or null with a toast. */
+/** The selected collection and its regular items, or null with a toast. */
 function selectedCollectionItems(): {
-  collectionKey: string;
+  collection: Zotero.Collection;
   items: Zotero.Item[];
 } | null {
   const pane = Zotero.getActiveZoteroPane();
@@ -52,7 +53,7 @@ function selectedCollectionItems(): {
     notify(getString("status-classify-empty"), "fail");
     return null;
   }
-  return { collectionKey: collection.key, items };
+  return { collection, items };
 }
 
 /**
@@ -62,16 +63,20 @@ function selectedCollectionItems(): {
 async function copyManualPrompt(): Promise<void> {
   const selection = selectedCollectionItems();
   if (!selection) return;
-  const { collectionKey, items } = selection;
+  const { collection, items } = selection;
+  const collectionKey = collection.key;
   const contexts: ItemContext[] = items.map(buildItemContext);
 
+  // The editable box holds this collection's OWN context (so saving never
+  // copies an inherited prompt down); the prompt actually built uses the
+  // effective context — own, or the nearest ancestor's — see getEffectiveContext.
   const initialContext = getCollectionContext(collectionKey);
   const dialogData: { [k: string]: any } = { context: initialContext };
 
   const copyPrompt = () => {
     const context = String(dialogData.context ?? "");
     setCollectionContext(collectionKey, context);
-    const text = buildManualPrompt(context, contexts);
+    const text = buildManualPrompt(getEffectiveContext(collection), contexts);
     new ztoolkit.Clipboard().addText(text, "text/unicode").copy();
     const preview = dialog.window?.document?.getElementById(
       PREVIEW_ID,
@@ -115,7 +120,9 @@ async function copyManualPrompt(): Promise<void> {
       namespace: "html",
       id: PREVIEW_ID,
       attributes: { rows: "10", readonly: "true" },
-      properties: { value: buildManualPrompt(initialContext, contexts) },
+      properties: {
+        value: buildManualPrompt(getEffectiveContext(collection), contexts),
+      },
       styles: {
         width: "52em",
         maxWidth: "80vw",

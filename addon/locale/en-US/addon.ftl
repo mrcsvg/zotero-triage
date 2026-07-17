@@ -18,6 +18,7 @@ dialog-context-label = Project context (used as the classification prompt)
 dialog-context-placeholder = Describe what makes an item high-priority for this project — topics, questions, methods, inclusion/exclusion criteria…
 dialog-network-note = Running this sends each item's metadata and this context to the provider configured in Preferences.
 dialog-classify-confirm = Save & Classify
+dialog-save = Save prompt
 dialog-cancel = Cancel
 dialog-close = Close
 
@@ -32,6 +33,7 @@ dialog-manual-import-placeholder = Paste the JSON array the model returned, e.g.
 dialog-manual-import-note = Only keys belonging to this collection are applied; anything else is ignored.
 dialog-manual-import-confirm = Import
 
+status-context-saved = Prompt saved
 status-set = Set priority { $value } on { $count } item(s)
 status-cleared = Cleared priority on { $count } item(s)
 status-classify-running = Classifying { $count } item(s)…

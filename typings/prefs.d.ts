@@ -16,6 +16,7 @@ declare namespace _ZoteroTypes {
       "aiModel": string;
       "aiApiKey": string;
       "collectionContexts": string;
+      "inheritContexts": boolean;
     };
   }
 }

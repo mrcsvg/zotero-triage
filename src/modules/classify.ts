@@ -2,6 +2,7 @@ import { config } from "../../package.json";
 import { getString } from "../utils/locale";
 import {
   getCollectionContext,
+  getEffectiveContext,
   setCollectionContext,
 } from "./collectionContext";
 import { setReadingPrioritiesForItems } from "./extra";
@@ -37,8 +38,16 @@ function chunk<T>(arr: T[], size: number): T[][] {
   return out;
 }
 
-/** Open the project-context dialog; resolve to the text, or null if cancelled. */
-async function openContextDialog(initial: string): Promise<string | null> {
+type ContextAction = "save" | "classify";
+
+/**
+ * Open the project-context dialog. Resolves to the chosen action and the edited
+ * text — `"save"` just persists the prompt, `"classify"` persists and runs it —
+ * or null if the dialog was cancelled/closed.
+ */
+async function openContextDialog(
+  initial: string,
+): Promise<{ action: ContextAction; context: string } | null> {
   const dialogData: { [k: string]: any } = { context: initial };
   const dialog = new ztoolkit.Dialog(3, 1)
     .addCell(0, 0, {
@@ -58,8 +67,14 @@ async function openContextDialog(initial: string): Promise<string | null> {
       },
       properties: { value: initial },
       styles: {
+        // The `rows` attribute alone isn't honored inside the dialog's XUL
+        // flex layout (the cell collapses the textarea to a single line), so
+        // pin an explicit height. Inline styles beat the platform stylesheet.
+        boxSizing: "border-box",
         width: "48em",
         maxWidth: "80vw",
+        height: "18em",
+        minHeight: "9em",
         resize: "vertical",
         fontFamily: "inherit",
       },
@@ -71,6 +86,7 @@ async function openContextDialog(initial: string): Promise<string | null> {
       styles: { opacity: "0.7", marginTop: "8px", fontSize: "0.9em" },
     })
     .addButton(getString("dialog-classify-confirm"), "classify")
+    .addButton(getString("dialog-save"), "save")
     .addButton(getString("dialog-cancel"), "cancel")
     .setDialogData(dialogData)
     .open(getString("dialog-classify-title"));
@@ -79,8 +95,9 @@ async function openContextDialog(initial: string): Promise<string | null> {
   await dialogData.unloadLock?.promise;
   addon.data.dialog = undefined;
 
-  if (dialogData._lastButtonId !== "classify") return null;
-  return String(dialogData.context ?? "");
+  const button = dialogData._lastButtonId;
+  if (button !== "classify" && button !== "save") return null;
+  return { action: button, context: String(dialogData.context ?? "") };
 }
 
 /** Send the items to the provider in batches and write back the priorities. */
@@ -169,16 +186,26 @@ async function classifyCollection(): Promise<void> {
   const items = collection
     .getChildItems(false, false)
     .filter((it) => it.isRegularItem());
+
+  const result = await openContextDialog(getCollectionContext(collection.key));
+  if (result === null) return; // cancelled
+  setCollectionContext(collection.key, result.context);
+
+  // "Save prompt" persists the context without any network call; the empty
+  // guard only blocks classification, so a prompt can be set up ahead of time.
+  if (result.action === "save") {
+    notify(getString("status-context-saved"));
+    return;
+  }
+
   if (!items.length) {
     notify(getString("status-classify-empty"), "fail");
     return;
   }
 
-  const context = await openContextDialog(getCollectionContext(collection.key));
-  if (context === null) return; // cancelled
-  setCollectionContext(collection.key, context);
-
-  await runClassification(context, items);
+  // Own context, or the nearest ancestor's when this collection has none and
+  // inheritance is enabled (see getEffectiveContext).
+  await runClassification(getEffectiveContext(collection), items);
 }
 
 export function registerCollectionMenu(

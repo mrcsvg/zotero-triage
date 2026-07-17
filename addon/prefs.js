@@ -11,3 +11,4 @@ pref("aiProvider", "anthropic"); // "anthropic" | "openai"
 pref("aiModel", ""); // empty = provider default
 pref("aiApiKey", ""); // stored locally in the profile; not synced; never logged
 pref("collectionContexts", "{}"); // JSON map: collectionKey -> project-context prompt
+pref("inheritContexts", true); // sub-collections inherit an ancestor's context when they have none
