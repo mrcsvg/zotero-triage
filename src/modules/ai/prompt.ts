@@ -82,6 +82,20 @@ export function buildMessages(
   return { system: SYSTEM_INSTRUCTION, user };
 }
 
+/**
+ * Flatten the provider-agnostic prompt into a single self-contained block the
+ * user can paste into any chat LLM by hand — no API key, no network. The model
+ * is still told to answer with the JSON array `parsePriorityResponse` reads, so
+ * the round-trip matches the automated path exactly. Pure.
+ */
+export function buildManualPrompt(
+  projectContext: string,
+  items: ItemContext[],
+): string {
+  const { system, user } = buildMessages(projectContext, items);
+  return `${system}\n\n${user}\n`;
+}
+
 /** Pull the first top-level JSON array out of a model response, or null. */
 function extractJsonArray(text: string): string | null {
   const start = text.indexOf("[");
