@@ -8,6 +8,7 @@ import { getPref } from "../../utils/prefs";
 import type { ClassifyPrompt } from "./prompt";
 import { classifyWithAnthropic, DEFAULT_ANTHROPIC_MODEL } from "./anthropic";
 import { classifyWithOpenAI, DEFAULT_OPENAI_MODEL } from "./openai";
+import { withRetry } from "./retry";
 
 export type ProviderId = "anthropic" | "openai";
 
@@ -36,16 +37,23 @@ export function getProvider(): ClassifyProvider {
   if (!apiKey) throw new MissingApiKeyError();
   const model = String(getPref("aiModel") ?? "").trim();
 
+  // Wrap each provider call in retry-with-backoff so a single rate-limit (429)
+  // or transient 5xx doesn't drop a whole batch. Fatal errors (400/401) throw
+  // through immediately — see `./retry.ts` and `ProviderError` in `./http.ts`.
   if (id === "openai") {
     return {
       id,
       classify: (p) =>
-        classifyWithOpenAI(p, apiKey, model || DEFAULT_OPENAI_MODEL),
+        withRetry(() =>
+          classifyWithOpenAI(p, apiKey, model || DEFAULT_OPENAI_MODEL),
+        ),
     };
   }
   return {
     id,
     classify: (p) =>
-      classifyWithAnthropic(p, apiKey, model || DEFAULT_ANTHROPIC_MODEL),
+      withRetry(() =>
+        classifyWithAnthropic(p, apiKey, model || DEFAULT_ANTHROPIC_MODEL),
+      ),
   };
 }
