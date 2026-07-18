@@ -27,11 +27,19 @@ import { getProvider, MissingApiKeyError } from "./ai/provider";
  * The project context (the classification prompt) is shared by both tabs and
  * saved per collection. Every score is written to the Extra field through the
  * helpers in `./extra.ts`.
+ *
+ * The dialog renders in a plain HTML document (ztoolkit opens `about:blank`),
+ * so the tabs are built from HTML buttons + panels toggled by `switchTab` —
+ * XUL `<tabbox>` has no behavior outside a chrome/XUL document.
  */
 
 const BATCH_SIZE = 20;
 const MENU_ID = `${config.addonRef}-collectionmenu-open`;
 const PREVIEW_ID = `${config.addonRef}-triage-prompt-preview`;
+const TAB_AI = `${config.addonRef}-triage-tab-ai`;
+const TAB_OFFLINE = `${config.addonRef}-triage-tab-offline`;
+const PANEL_AI = `${config.addonRef}-triage-panel-ai`;
+const PANEL_OFFLINE = `${config.addonRef}-triage-panel-offline`;
 
 function notify(text: string, type: "success" | "fail" = "success") {
   new ztoolkit.ProgressWindow(config.addonName, { closeTime: 3000 })
@@ -43,6 +51,27 @@ function chunk<T>(arr: T[], size: number): T[][] {
   const out: T[][] = [];
   for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size));
   return out;
+}
+
+/** Show one tab's panel and highlight its header; hide the other. */
+function switchTab(doc: Document, active: "ai" | "offline"): void {
+  const tabs = [
+    { tab: TAB_AI, panel: PANEL_AI, key: "ai" },
+    { tab: TAB_OFFLINE, panel: PANEL_OFFLINE, key: "offline" },
+  ] as const;
+  for (const t of tabs) {
+    const isActive = t.key === active;
+    const panel = doc.getElementById(t.panel) as HTMLElement | null;
+    if (panel) panel.style.display = isActive ? "block" : "none";
+    const tab = doc.getElementById(t.tab) as HTMLElement | null;
+    if (tab) {
+      tab.style.borderBottom = isActive
+        ? "2px solid AccentColor"
+        : "2px solid transparent";
+      tab.style.fontWeight = isActive ? "600" : "400";
+      tab.style.opacity = isActive ? "1" : "0.65";
+    }
+  }
 }
 
 /** Send the items to the provider in batches and write back the priorities. */
@@ -188,17 +217,35 @@ async function openTriageDialog(
     dialog.window?.close();
   };
 
+  // Shared styles for the two HTML tab headers.
+  const tabHeaderStyle = {
+    background: "transparent",
+    border: "none",
+    borderBottom: "2px solid transparent",
+    padding: "6px 12px",
+    margin: "0",
+    cursor: "pointer",
+    fontSize: "inherit",
+    fontFamily: "inherit",
+    color: "inherit",
+  };
+  const actionButtonStyle = { marginTop: "4px", padding: "5px 14px" };
+
   const dialog = new ztoolkit.Dialog(1, 1)
     .addCell(0, 0, {
-      tag: "vbox",
-      namespace: "xul",
+      tag: "div",
+      namespace: "html",
       styles: { width: "54em", maxWidth: "82vw" },
       children: [
         {
           tag: "label",
           namespace: "html",
           properties: { innerHTML: getString("dialog-context-label") },
-          styles: { fontWeight: "600", marginBottom: "6px" },
+          styles: {
+            display: "block",
+            fontWeight: "600",
+            marginBottom: "6px",
+          },
         },
         {
           tag: "textarea",
@@ -212,167 +259,206 @@ async function openTriageDialog(
           properties: { value: initialContext },
           styles: {
             width: "100%",
+            boxSizing: "border-box",
             resize: "vertical",
             fontFamily: "inherit",
-            marginBottom: "10px",
+            marginBottom: "12px",
           },
         },
+        // Tab bar (HTML buttons).
         {
-          tag: "tabbox",
-          namespace: "xul",
+          tag: "div",
+          namespace: "html",
+          styles: {
+            display: "flex",
+            gap: "4px",
+            borderBottom: "1px solid rgba(128,128,128,0.35)",
+            marginBottom: "12px",
+          },
           children: [
             {
-              tag: "tabs",
-              namespace: "xul",
-              children: [
+              tag: "button",
+              namespace: "html",
+              id: TAB_AI,
+              attributes: { type: "button" },
+              properties: { textContent: getString("tab-ai") },
+              styles: {
+                ...tabHeaderStyle,
+                borderBottom: "2px solid AccentColor",
+                fontWeight: "600",
+              },
+              listeners: [
                 {
-                  tag: "tab",
-                  namespace: "xul",
-                  attributes: { label: getString("tab-ai") },
-                },
-                {
-                  tag: "tab",
-                  namespace: "xul",
-                  attributes: { label: getString("tab-offline") },
+                  type: "click",
+                  listener: (ev: Event) =>
+                    switchTab(
+                      (ev.currentTarget as Node).ownerDocument as Document,
+                      "ai",
+                    ),
                 },
               ],
             },
             {
-              tag: "tabpanels",
-              namespace: "xul",
-              children: [
-                // Tab 1 — Classify with AI.
+              tag: "button",
+              namespace: "html",
+              id: TAB_OFFLINE,
+              attributes: { type: "button" },
+              properties: { textContent: getString("tab-offline") },
+              styles: { ...tabHeaderStyle, opacity: "0.65" },
+              listeners: [
                 {
-                  tag: "tabpanel",
-                  namespace: "xul",
-                  attributes: { orient: "vertical" },
-                  styles: { padding: "10px 4px" },
-                  children: [
-                    {
-                      tag: "label",
-                      namespace: "html",
-                      properties: {
-                        innerHTML: getString("dialog-network-note"),
-                      },
-                      styles: {
-                        opacity: "0.7",
-                        marginBottom: "10px",
-                        fontSize: "0.9em",
-                      },
-                    },
-                    {
-                      tag: "button",
-                      namespace: "xul",
-                      attributes: {
-                        label: getString("dialog-classify-confirm"),
-                      },
-                      listeners: [{ type: "command", listener: classifyNow }],
-                    },
-                  ],
-                },
-                // Tab 2 — Offline copy/paste round-trip.
-                {
-                  tag: "tabpanel",
-                  namespace: "xul",
-                  attributes: { orient: "vertical" },
-                  styles: { padding: "10px 4px" },
-                  children: [
-                    {
-                      tag: "label",
-                      namespace: "html",
-                      properties: {
-                        innerHTML: getString("dialog-manual-prompt-label"),
-                      },
-                      styles: { fontWeight: "600", marginBottom: "6px" },
-                    },
-                    {
-                      tag: "textarea",
-                      namespace: "html",
-                      id: PREVIEW_ID,
-                      attributes: { rows: "8", readonly: "true" },
-                      properties: {
-                        value: buildManualPrompt(initialContext, contexts),
-                      },
-                      styles: {
-                        width: "100%",
-                        resize: "vertical",
-                        fontFamily: "monospace",
-                        fontSize: "0.85em",
-                        opacity: "0.9",
-                      },
-                    },
-                    {
-                      tag: "label",
-                      namespace: "html",
-                      properties: {
-                        innerHTML: getString("dialog-manual-prompt-note"),
-                      },
-                      styles: {
-                        opacity: "0.7",
-                        margin: "8px 0",
-                        fontSize: "0.9em",
-                      },
-                    },
-                    {
-                      tag: "button",
-                      namespace: "xul",
-                      attributes: { label: getString("dialog-manual-copy") },
-                      listeners: [{ type: "command", listener: copyPrompt }],
-                    },
-                    { tag: "separator", namespace: "xul" },
-                    {
-                      tag: "label",
-                      namespace: "html",
-                      properties: {
-                        innerHTML: getString("dialog-manual-import-label"),
-                      },
-                      styles: {
-                        fontWeight: "600",
-                        marginTop: "12px",
-                        marginBottom: "6px",
-                      },
-                    },
-                    {
-                      tag: "textarea",
-                      namespace: "html",
-                      attributes: {
-                        "data-bind": "response",
-                        "data-prop": "value",
-                        rows: "8",
-                        placeholder: getString(
-                          "dialog-manual-import-placeholder",
-                        ),
-                      },
-                      styles: {
-                        width: "100%",
-                        resize: "vertical",
-                        fontFamily: "monospace",
-                        fontSize: "0.85em",
-                      },
-                    },
-                    {
-                      tag: "label",
-                      namespace: "html",
-                      properties: {
-                        innerHTML: getString("dialog-manual-import-note"),
-                      },
-                      styles: {
-                        opacity: "0.7",
-                        margin: "8px 0",
-                        fontSize: "0.9em",
-                      },
-                    },
-                    {
-                      tag: "button",
-                      namespace: "xul",
-                      attributes: {
-                        label: getString("dialog-manual-import-confirm"),
-                      },
-                      listeners: [{ type: "command", listener: importNow }],
-                    },
-                  ],
+                  type: "click",
+                  listener: (ev: Event) =>
+                    switchTab(
+                      (ev.currentTarget as Node).ownerDocument as Document,
+                      "offline",
+                    ),
                 },
               ],
+            },
+          ],
+        },
+        // Panel 1 — Classify with AI.
+        {
+          tag: "div",
+          namespace: "html",
+          id: PANEL_AI,
+          styles: { display: "block" },
+          children: [
+            {
+              tag: "label",
+              namespace: "html",
+              properties: { innerHTML: getString("dialog-network-note") },
+              styles: {
+                display: "block",
+                opacity: "0.7",
+                marginBottom: "10px",
+                fontSize: "0.9em",
+              },
+            },
+            {
+              tag: "button",
+              namespace: "html",
+              attributes: { type: "button" },
+              properties: { textContent: getString("dialog-classify-confirm") },
+              styles: actionButtonStyle,
+              listeners: [{ type: "click", listener: classifyNow }],
+            },
+          ],
+        },
+        // Panel 2 — Offline copy/paste round-trip (hidden until selected).
+        {
+          tag: "div",
+          namespace: "html",
+          id: PANEL_OFFLINE,
+          styles: { display: "none" },
+          children: [
+            {
+              tag: "label",
+              namespace: "html",
+              properties: {
+                innerHTML: getString("dialog-manual-prompt-label"),
+              },
+              styles: {
+                display: "block",
+                fontWeight: "600",
+                marginBottom: "6px",
+              },
+            },
+            {
+              tag: "textarea",
+              namespace: "html",
+              id: PREVIEW_ID,
+              attributes: { rows: "7", readonly: "true" },
+              properties: {
+                value: buildManualPrompt(initialContext, contexts),
+              },
+              styles: {
+                width: "100%",
+                boxSizing: "border-box",
+                resize: "vertical",
+                fontFamily: "monospace",
+                fontSize: "0.85em",
+                opacity: "0.9",
+              },
+            },
+            {
+              tag: "label",
+              namespace: "html",
+              properties: { innerHTML: getString("dialog-manual-prompt-note") },
+              styles: {
+                display: "block",
+                opacity: "0.7",
+                margin: "8px 0",
+                fontSize: "0.9em",
+              },
+            },
+            {
+              tag: "button",
+              namespace: "html",
+              attributes: { type: "button" },
+              properties: { textContent: getString("dialog-manual-copy") },
+              styles: actionButtonStyle,
+              listeners: [{ type: "click", listener: copyPrompt }],
+            },
+            {
+              tag: "hr",
+              namespace: "html",
+              styles: {
+                border: "none",
+                borderTop: "1px solid rgba(128,128,128,0.25)",
+                margin: "16px 0",
+              },
+            },
+            {
+              tag: "label",
+              namespace: "html",
+              properties: {
+                innerHTML: getString("dialog-manual-import-label"),
+              },
+              styles: {
+                display: "block",
+                fontWeight: "600",
+                marginBottom: "6px",
+              },
+            },
+            {
+              tag: "textarea",
+              namespace: "html",
+              attributes: {
+                "data-bind": "response",
+                "data-prop": "value",
+                rows: "7",
+                placeholder: getString("dialog-manual-import-placeholder"),
+              },
+              styles: {
+                width: "100%",
+                boxSizing: "border-box",
+                resize: "vertical",
+                fontFamily: "monospace",
+                fontSize: "0.85em",
+              },
+            },
+            {
+              tag: "label",
+              namespace: "html",
+              properties: { innerHTML: getString("dialog-manual-import-note") },
+              styles: {
+                display: "block",
+                opacity: "0.7",
+                margin: "8px 0",
+                fontSize: "0.9em",
+              },
+            },
+            {
+              tag: "button",
+              namespace: "html",
+              attributes: { type: "button" },
+              properties: {
+                textContent: getString("dialog-manual-import-confirm"),
+              },
+              styles: actionButtonStyle,
+              listeners: [{ type: "click", listener: importNow }],
             },
           ],
         },
