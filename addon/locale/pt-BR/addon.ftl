@@ -7,13 +7,13 @@ menu-medium = Média ({ $value })
 menu-low = Baixa ({ $value })
 menu-custom = Personalizar…
 menu-clear = Limpar
-menu-classify = Classificar com IA…
-menu-manual-prompt = Copiar prompt para LLM offline…
-menu-manual-import = Importar prioridades da LLM…
+menu-collection = Zotero Triage…
 
 prompt-custom-text = Definir prioridade de leitura (0–100):
 
-dialog-classify-title = Classificar coleção com IA
+dialog-collection-title = Zotero Triage
+tab-ai = Classificar com IA
+tab-offline = Offline (copiar/colar)
 dialog-context-label = Contexto do projeto (usado como prompt de classificação)
 dialog-context-placeholder = Descreva o que torna um item prioritário neste projeto — temas, perguntas, métodos, critérios de inclusão/exclusão…
 dialog-network-note = Ao executar, os metadados de cada item e este contexto são enviados ao provedor configurado nas Preferências.
@@ -21,12 +21,10 @@ dialog-classify-confirm = Salvar e Classificar
 dialog-cancel = Cancelar
 dialog-close = Fechar
 
-dialog-manual-prompt-title = Copiar prompt para uma LLM offline
 dialog-manual-prompt-label = Prompt completo (cole no ChatGPT, Claude ou qualquer LLM de chat)
 dialog-manual-prompt-note = Copie este prompt, cole na sua LLM e traga a resposta em JSON de volta por “Importar prioridades da LLM…”. Sem chave de API e sem rede.
 dialog-manual-copy = Copiar prompt
 
-dialog-manual-import-title = Importar prioridades da LLM
 dialog-manual-import-label = Cole a resposta da LLM
 dialog-manual-import-placeholder = Cole o array JSON que o modelo retornou, ex.: [{ "{" }"key":"ABCD1234","priority":85 { "}" }, …]
 dialog-manual-import-note = Só chaves desta coleção são aplicadas; o resto é ignorado.

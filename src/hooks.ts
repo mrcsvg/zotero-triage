@@ -6,7 +6,6 @@ import {
 } from "./modules/column";
 import { registerContextMenu } from "./modules/menu";
 import { registerCollectionMenu } from "./modules/classify";
-import { registerManualMenu } from "./modules/manualClassify";
 import { registerShortcuts } from "./modules/shortcuts";
 import { registerPrefPane } from "./modules/prefs";
 
@@ -42,7 +41,6 @@ async function onMainWindowLoad(win: _ZoteroTypes.MainWindow): Promise<void> {
   addon.data.ztoolkit = createZToolkit();
   registerContextMenu(win);
   registerCollectionMenu(win);
-  registerManualMenu(win);
   registerShortcuts();
 }
 
