@@ -40,6 +40,8 @@ const TAB_AI = `${config.addonRef}-triage-tab-ai`;
 const TAB_OFFLINE = `${config.addonRef}-triage-tab-offline`;
 const PANEL_AI = `${config.addonRef}-triage-panel-ai`;
 const PANEL_OFFLINE = `${config.addonRef}-triage-panel-offline`;
+const DIALOG_WIDTH = 860;
+const DIALOG_HEIGHT = 720;
 
 function notify(text: string, type: "success" | "fail" = "success") {
   new ztoolkit.ProgressWindow(config.addonName, { closeTime: 3000 })
@@ -471,16 +473,33 @@ async function openTriageDialog(
     })
     .addButton(getString("dialog-close"), "close")
     .setDialogData(dialogData)
-    // Give the window a sensible initial size. `fitContent` (the default) calls
-    // sizeToContent(), which collapses the window because the "Offline" panel
-    // starts hidden — so it would open tiny. Explicit size + resizable instead.
+    // `fitContent` (the default) runs sizeToContent(), which measures only the
+    // visible content — and the "Offline" panel starts hidden, so the window
+    // collapses and opens tiny. Turn it off and size the window ourselves once
+    // it has loaded (the width/height window features alone don't stick for an
+    // about:blank dialog).
     .open(getString("dialog-collection-title"), {
       centerscreen: true,
       resizable: true,
       fitContent: false,
-      width: 860,
-      height: 720,
     });
+
+  // Force a usable size after the window loads and center it on screen.
+  dialogData.loadCallback = () => {
+    const w = dialog.window as (Window & typeof globalThis) | undefined;
+    if (!w) return;
+    try {
+      w.resizeTo(DIALOG_WIDTH, DIALOG_HEIGHT);
+      const availW = w.screen?.availWidth ?? DIALOG_WIDTH;
+      const availH = w.screen?.availHeight ?? DIALOG_HEIGHT;
+      w.moveTo(
+        Math.max(0, Math.round((availW - DIALOG_WIDTH) / 2)),
+        Math.max(0, Math.round((availH - DIALOG_HEIGHT) / 2)),
+      );
+    } catch {
+      /* best effort — the window is resizable if this ever fails */
+    }
+  };
 
   addon.data.dialog = dialog;
   await dialogData.unloadLock?.promise;
