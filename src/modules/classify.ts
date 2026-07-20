@@ -235,7 +235,12 @@ async function openTriageDialog(
     .addCell(0, 0, {
       tag: "div",
       namespace: "html",
-      styles: { width: "54em", maxWidth: "82vw" },
+      styles: {
+        width: "100%",
+        minWidth: "38em",
+        boxSizing: "border-box",
+        padding: "4px 6px",
+      },
       children: [
         {
           tag: "label",
@@ -466,7 +471,16 @@ async function openTriageDialog(
     })
     .addButton(getString("dialog-close"), "close")
     .setDialogData(dialogData)
-    .open(getString("dialog-collection-title"));
+    // Give the window a sensible initial size. `fitContent` (the default) calls
+    // sizeToContent(), which collapses the window because the "Offline" panel
+    // starts hidden — so it would open tiny. Explicit size + resizable instead.
+    .open(getString("dialog-collection-title"), {
+      centerscreen: true,
+      resizable: true,
+      fitContent: false,
+      width: 860,
+      height: 720,
+    });
 
   addon.data.dialog = dialog;
   await dialogData.unloadLock?.promise;
